@@ -53,19 +53,39 @@ def ola(spec, n_fft=N_FFT, hop=HOP):
     return y.reshape(-1)[half: half + F * hop]
 
 
+@functools.lru_cache(maxsize=1)
+def _interp_w(hop=HOP):
+    """F.interpolate(scale_factor=hop, linear, align_corners=False) weights: sample j of frame k lies at
+    k + (j + 0.5) / hop - 0.5, between frames (k-1, k) for j < hop/2 and (k, k+1) after."""
+    u = (((np.arange(hop) + 0.5) / hop - 0.5) % 1.0).astype(np.float32)
+    return u, (1.0 - u).astype(np.float32)
+
+
 def pulses(f0, hop=HOP, sr=SR, vthresh=40.0, fmax=11000.0):
-    """tiny_model.pulses: linear-interpolated F0, closed-form band-limited pulse train."""
-    F = len(f0)
-    x = np.clip((np.arange(F * hop) + 0.5) / hop - 0.5, 0, F - 1)        # interpolate(align_corners=False)
-    f = np.interp(x, np.arange(F), f0).astype(np.float32)
+    """tiny_model.pulses: linear-interpolated F0, closed-form band-limited pulse train. float32 passes
+    with the interpolation as two broadcast products (np.interp's per-sample search cost as much as
+    the rest); the phase still accumulates in float64."""
+    F, h2 = len(f0), hop // 2
+    u, v = _interp_w(hop)
+    fp = np.pad(np.asarray(f0, np.float32), 1, mode="edge")               # clamped at both ends
+    f = np.empty((F, hop), np.float32)
+    np.multiply(fp[:-2, None], v[:h2], out=f[:, :h2]); f[:, :h2] += fp[1:-1, None] * u[:h2]
+    np.multiply(fp[1:-1, None], v[h2:], out=f[:, h2:]); f[:, h2:] += fp[2:, None] * u[h2:]
+    f = f.reshape(-1)
     voiced = f > vthresh
-    f = np.maximum(f, vthresh)
-    t = (2 * np.pi * np.modf(np.cumsum(f / sr, dtype=np.float64))[0]).astype(np.float32)
-    H = np.floor(fmax / f)
-    s = np.sin(t / 2)
-    ok = np.abs(s) > 1e-3
-    e = np.where(ok, np.sin((H + 0.5) * t) / (2 * np.where(ok, s, 1)), H + 0.5) - 0.5
-    return (e * voiced).astype(np.float32)
+    np.maximum(f, vthresh, out=f)
+    t = np.cumsum(f, dtype=np.float64); t *= 1.0 / sr; np.modf(t, t); t *= 2 * np.pi   # wrap: formula is 2pi-periodic
+    t = t.astype(np.float32)
+    H = np.floor(fmax / f); H += 0.5
+    s = np.sin(t * 0.5); s *= 2
+    bad = np.abs(s) <= 2e-3                                               # sin((H+1/2)t) / (2 sin(t/2)) -> H+1/2
+    e = np.sin(H * t)
+    s[bad] = 1
+    e /= s
+    e[bad] = H[bad]
+    e -= 0.5
+    e[~voiced] = 0
+    return e
 
 
 def stft(x, F, n_fft=N_FFT, hop=HOP):

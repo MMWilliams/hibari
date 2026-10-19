@@ -111,8 +111,8 @@ def discriminator_loss(disc_real_outputs, disc_generated_outputs):
         r_loss = torch.mean((1-dr)**2)
         g_loss = torch.mean(dg**2)
         loss += (r_loss + g_loss)
-        r_losses.append(r_loss.item())
-        g_losses.append(g_loss.item())
+        r_losses.append(r_loss)
+        g_losses.append(g_loss)
 
     return loss, r_losses, g_losses
 
@@ -126,6 +126,8 @@ def generator_loss(disc_outputs):
         loss += l
 
     return loss, gen_losses
+
+USE_TPRLS = True   # relativistic term: median + masked indexing, several GPU syncs per call
 
 """ https://dl.acm.org/doi/abs/10.1145/3573834.3574506 """
 def discriminator_TPRLS_loss(disc_real_outputs, disc_generated_outputs):
@@ -161,7 +163,7 @@ class GeneratorLoss(torch.nn.Module):
         loss_gen_f, losses_gen_f = generator_loss(y_df_hat_g)
         loss_gen_s, losses_gen_s = generator_loss(y_ds_hat_g)
 
-        loss_rel = generator_TPRLS_loss(y_df_hat_r, y_df_hat_g) + generator_TPRLS_loss(y_ds_hat_r, y_ds_hat_g)
+        loss_rel = (generator_TPRLS_loss(y_df_hat_r, y_df_hat_g) + generator_TPRLS_loss(y_ds_hat_r, y_ds_hat_g)) if USE_TPRLS else 0.0
         
         loss_gen_all = loss_gen_s + loss_gen_f + loss_fm_s + loss_fm_f + loss_rel
         
@@ -182,7 +184,7 @@ class DiscriminatorLoss(torch.nn.Module):
         y_ds_hat_r, y_ds_hat_g, _, _ = self.msd(y, y_hat)
         loss_disc_s, losses_disc_s_r, losses_disc_s_g = discriminator_loss(y_ds_hat_r, y_ds_hat_g)
         
-        loss_rel = discriminator_TPRLS_loss(y_df_hat_r, y_df_hat_g) + discriminator_TPRLS_loss(y_ds_hat_r, y_ds_hat_g)
+        loss_rel = (discriminator_TPRLS_loss(y_df_hat_r, y_df_hat_g) + discriminator_TPRLS_loss(y_ds_hat_r, y_ds_hat_g)) if USE_TPRLS else 0.0
 
 
         d_loss = loss_disc_s + loss_disc_f + loss_rel

@@ -26,6 +26,18 @@ def stft(x, fft_size, hop_size, win_length, window):
 
     return torch.abs(x_stft).transpose(2, 1)
 
+def _run_batched(discs, y, y_hat):
+    """Real and fake share one forward per discriminator (half the kernel launches; the step is
+    launch-bound). Grad only flows into the y_hat half."""
+    B = y.shape[0]
+    y_d_rs, y_d_gs, fmap_rs, fmap_gs = [], [], [], []
+    for d in discs:
+        out, fmap = d(torch.cat([y, y_hat], 0))
+        y_d_rs.append(out[:B]); y_d_gs.append(out[B:])
+        fmap_rs.append([f[:B] for f in fmap]); fmap_gs.append([f[B:] for f in fmap])
+    return y_d_rs, y_d_gs, fmap_rs, fmap_gs
+
+
 class SpecDiscriminator(nn.Module):
     """docstring for Discriminator."""
 
@@ -35,7 +47,7 @@ class SpecDiscriminator(nn.Module):
         self.fft_size = fft_size
         self.shift_size = shift_size
         self.win_length = win_length
-        self.window = getattr(torch, window)(win_length)
+        self.register_buffer("window", getattr(torch, window)(win_length), persistent=False)
         self.discriminators = nn.ModuleList([
             norm_f(nn.Conv2d(1, 32, kernel_size=(3, 9), padding=(1, 4))),
             norm_f(nn.Conv2d(32, 32, kernel_size=(3, 9), stride=(1,2), padding=(1, 4))),
@@ -50,7 +62,7 @@ class SpecDiscriminator(nn.Module):
 
         fmap = []
         y = y.squeeze(1)
-        y = stft(y, self.fft_size, self.shift_size, self.win_length, self.window.to(y.get_device()))
+        y = stft(y.float(), self.fft_size, self.shift_size, self.win_length, self.window)
         y = y.unsqueeze(1)
         for i, d in enumerate(self.discriminators):
             y = d(y)
@@ -78,19 +90,7 @@ class MultiResSpecDiscriminator(torch.nn.Module):
             ])
 
     def forward(self, y, y_hat):
-        y_d_rs = []
-        y_d_gs = []
-        fmap_rs = []
-        fmap_gs = []
-        for i, d in enumerate(self.discriminators):
-            y_d_r, fmap_r = d(y)
-            y_d_g, fmap_g = d(y_hat)
-            y_d_rs.append(y_d_r)
-            fmap_rs.append(fmap_r)
-            y_d_gs.append(y_d_g)
-            fmap_gs.append(fmap_g)
-
-        return y_d_rs, y_d_gs, fmap_rs, fmap_gs
+        return _run_batched(self.discriminators, y, y_hat)
 
 
 class DiscriminatorP(torch.nn.Module):
@@ -141,19 +141,7 @@ class MultiPeriodDiscriminator(torch.nn.Module):
         ])
 
     def forward(self, y, y_hat):
-        y_d_rs = []
-        y_d_gs = []
-        fmap_rs = []
-        fmap_gs = []
-        for i, d in enumerate(self.discriminators):
-            y_d_r, fmap_r = d(y)
-            y_d_g, fmap_g = d(y_hat)
-            y_d_rs.append(y_d_r)
-            fmap_rs.append(fmap_r)
-            y_d_gs.append(y_d_g)
-            fmap_gs.append(fmap_g)
-
-        return y_d_rs, y_d_gs, fmap_rs, fmap_gs
+        return _run_batched(self.discriminators, y, y_hat)
     
 class WavLMDiscriminator(nn.Module):
     """docstring for Discriminator."""

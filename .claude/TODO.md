@@ -14,3 +14,8 @@ Baseline on this desktop, 1 thread: tiny RTF 0.0038 vs Kokoro-7M-Distill 0.0496.
 - [ ] Measure on a real low-end device (or emulate: 1 thread, low clock).
 - [ ] If audio sounds robotic: add WavLM feature-matching loss (Kokoro-7M notes say it fixes phase).
 - [ ] Corpus is mostly declarative prose: add questions/exclamations/dialogue for prosody range.
+
+## Portability (reese 2026-10-18: "needs to run on many devices")
+- [ ] Keep the graph to portable ops only: conv1d (incl. depthwise), linear, layernorm, gelu, softmax attention. Duration expansion (repeat_interleave) and iSTFT live in host code, not the graph.
+- [ ] Targets: ONNX Runtime (Windows/Linux/macOS, Android, iOS), onnxruntime-web WASM/WebGPU (browser), and a dependency-free C runtime (int8 weights, real FFT) for embedded Linux / very small CPUs.
+- [ ] Portable G2P: no Python/spaCy on device. Lexicon lookup (misaki gold+silver dicts, compressed) + small fallback (espeak-ng or a tiny G2P net).

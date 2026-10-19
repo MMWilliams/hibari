@@ -42,7 +42,7 @@ A/B wavs: runs/compare_v3/ab{0,1,2}_teacher_paradee_tiny.wav. Snapshot pick by p
 - [ ] Portable G2P: lexicon lookup (misaki gold+silver dicts, compressed) + small fallback (espeak-ng or a tiny G2P net).
 
 ## Productize (reese 2026-10-19: "finalize and perfect it to make it runnable on mac, windows and linux and a way to turn plain text into the sounds the model reads, incredibly user and developer friendly and researcher friendly without compromising quality and performance")
-- [ ] Name: reese choosing (PyPI-free: kokoro-tiny, pocketvoice, wren-tts, voxlet, minivox, kokorin, hibari, tinyheart, lilt-tts, sotto-tts). Publishing: local only until reese says (declined the GitHub/PyPI question).
+- [x] Name: **hibari** (reese 2026-10-19). Phase 1 (G2P, pip package + CLI, docs) running headless: logs/fable_task4.md -> logs/fable_agent5.log (Fable max, API credits). Phase 2 = native no-Python CLI/library + CI. Publishing: local only until reese says (declined the GitHub/PyPI question).
 - [ ] Text -> phonemes without GPL espeak-ng: normalizer (numbers, dates, money, abbreviations) + misaki-convention lexicon + tiny OOV G2P net; measure phoneme error vs misaki and end-to-end UTMOS/WER.
 - [ ] pip package (onnxruntime + numpy) with Python API, streaming, speed control, CLI; native no-Python CLI/library for Mac/Windows/Linux (CI workflow ready, Mac build needs GitHub).
 - [ ] Researcher docs: reproducible pipeline (dump, train decoder, train ProsodyNet, export, eval), model card with docs/METRICS.md numbers.

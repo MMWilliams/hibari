@@ -16,3 +16,8 @@ Baseline on this desktop, 1 thread: tiny RTF 0.0038 vs Kokoro-7M-Distill 0.0496.
 ## Done
 - [x] GAN phase 1.8 -> ~7.2 it/s (batch 16): bf16 autocast for D/G losses, MRD hops fft/4 (Vocos), real+fake batched per discriminator, 0.8 s random GAN sub-window, TPRLS off (--tprls restores). Step was WDDM launch-bound (~3300 launches/step).
 - [x] ONNX export (export/export_onnx.py, durations in-graph, dynamic L) + numpy/onnxruntime inference (export/infer_numpy.py) + int8 dynamic quant. numpy iSTFT matches torch.istft to 1e-7.
+
+## Portability (reese 2026-10-18: "needs to run on many devices")
+- [ ] Keep the graph to portable ops only: conv1d (incl. depthwise), linear, layernorm, gelu, softmax attention. Current export keeps duration expansion in-graph with CumSum/Range/Less/ReduceSum/Gather (all opset-11 ops, fine for ORT-web); iSTFT lives in host code.
+- [ ] Targets (reese: "any device, Mac or Windows"): Windows x64 + ARM64, macOS Apple Silicon + Intel, including old/weak laptops. No Python on the user's machine: ship a self-contained binary (dependency-free C runtime, int8 weights, real FFT; or ONNX Runtime static build) per platform, macOS as a universal binary. Also ORT Android/iOS, onnxruntime-web WASM/WebGPU.
+- [ ] Portable G2P: no Python/spaCy on device. Lexicon lookup (misaki gold+silver dicts, compressed) + small fallback (espeak-ng or a tiny G2P net).

@@ -5,3 +5,5 @@ logs/
 upstream/
 configs/empty.pth
 __pycache__/
+export/*.onnx
+.claude/activity.json

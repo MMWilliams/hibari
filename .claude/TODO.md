@@ -12,10 +12,14 @@ Shipping export: export/v3_final (one ONNX graph: ProsodyNet durations/F0/energy
 | v3 40k + ProsodyNet fp32 | 24.75 | 46 (99 best-of-4) | 4.43 | 2.7% |
 A/B wavs: runs/compare_v3/ab{0,1,2}_teacher_paradee_tiny.wav. Snapshot pick by pnet UTMOS (runs/tiny_v3/diag/results.json): 30k 4.404, 40k 4.437, 50k 4.431, 60k 4.430; teacher 4.529.
 
+## Size and speed sheet 2026-10-19 (docs/METRICS.md, scripts/bench_all.py)
+20 sentences (109 s audio), warm, round-robin, best-of-3, load 13-35%: ours int8 7.94 MB 128x (1 thr) / 175x (4 thr), 158 MB peak RSS, load 0.8 s; Paradee int8 9.04 MB 18x / 27x, 176 MB, 2.1 s; Kokoro-7M 30 MB 17x / 27x, 889 MB, 10.9 s; teacher 327 MB 1.9x / 3.9x, 1.5 GB, 10.6 s. Latency 1.8 s / 7.9 s sentence at 1 thread: ours int8 12 / 71 ms, Paradee int8 87 / 602 ms, Kokoro-7M 108 / 357 ms, teacher 739 / 3880 ms.
+- [ ] Re-run `python scripts/bench_all.py` on a quiet machine (timing children wait for <=20% load but other sessions came back mid-run; Paradee did 22-24x when quiet).
+
 ## Open
 - [ ] Listen to runs/compare_v3/ab*.wav (before ProsodyNet reese found v3 10k ab0 "fuzzy and robotic", ab2 "nearly perfect").
 - [ ] Size: int8 7.94 MB vs Paradee 9.04. Convs stay fp32 (ConvInteger 2x slower than fp32 Conv in ORT 1.29 x86; re-test on ARM or QLinearConv static quant). ProsodyNet (c 192, 6 shared attention layers, 6 dilated ConvNeXt) is the next thing to shrink.
-- [ ] Speed: int8 net ~4-5 ms per s of audio, host DSP ~3.3 ms (pulses 0.6, stft 0.6, noise 0.6, combine 1.2, ola 0.4; scripts/profile_dsp.py export/v3_final/tiny.int8.onnx). C runtime idea: analytic pulse spectrum per frame (Hann kernel at h*f0, phase h*theta) skips the audio-rate pulses and forward FFT; approximation, needs a short fine-tune.
+- [ ] Speed (docs/METRICS.md): int8 net 4.1 ms per s of audio, host DSP 3.7 ms (pulses 0.6, stft 0.65, noise 0.7, combine 1.6, ola 0.5; scripts/profile_dsp.py export/v3_final/tiny.int8.onnx). 4 threads only help the net part (2.2 ms), the DSP is single-threaded numpy. C runtime idea: analytic pulse spectrum per frame (Hann kernel at h*f0, phase h*theta) skips the audio-rate pulses and forward FFT; approximation, needs a short fine-tune.
 - [ ] int8 F0 differs from fp32 by 0.6 Hz mean / 5.4 Hz max (ProsodyNet MatMuls quantized), durations within +-2 frames; UTMOS equal. If pitch is off by ear, leave ProsodyNet's dur/pro heads fp32.
 - [ ] Training schedule: v1 and v2 peaked at 60k, v3 peaks at 40k with ProsodyNet (free prosody keeps improving to 50k). Shorter cosine or lower GAN weight late if retraining.
 - [ ] v3 noise branch carries ~0.35% of spectral energy (per-element up to 23x the other branches, so not droppable); the free-phase branch carries most above ~2.5 kHz.

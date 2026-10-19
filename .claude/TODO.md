@@ -40,3 +40,9 @@ A/B wavs: runs/compare_v3/ab{0,1,2}_teacher_paradee_tiny.wav. Snapshot pick by p
 - [ ] Keep the graph to portable ops only: conv1d (incl. depthwise), linear, layernorm, gelu, softmax attention, CumSum/Range/Less/ReduceSum/Gather for the duration expansion (all opset-11, fine for ORT-web); pulses/noise/iSTFT live in host code.
 - [ ] Targets: Windows x64 + ARM64, macOS Apple Silicon + Intel, old/weak laptops. No Python on the user's machine: self-contained binary per platform (dependency-free C runtime with int8 weights and a real FFT, or ONNX Runtime static build), macOS universal. Also ORT Android/iOS, onnxruntime-web WASM/WebGPU.
 - [ ] Portable G2P: lexicon lookup (misaki gold+silver dicts, compressed) + small fallback (espeak-ng or a tiny G2P net).
+
+## Productize (reese 2026-10-19: "finalize and perfect it to make it runnable on mac, windows and linux and a way to turn plain text into the sounds the model reads, incredibly user and developer friendly and researcher friendly without compromising quality and performance")
+- [ ] Name: reese choosing (PyPI-free: kokoro-tiny, pocketvoice, wren-tts, voxlet, minivox, kokorin, hibari, tinyheart, lilt-tts, sotto-tts). Publishing: local only until reese says (declined the GitHub/PyPI question).
+- [ ] Text -> phonemes without GPL espeak-ng: normalizer (numbers, dates, money, abbreviations) + misaki-convention lexicon + tiny OOV G2P net; measure phoneme error vs misaki and end-to-end UTMOS/WER.
+- [ ] pip package (onnxruntime + numpy) with Python API, streaming, speed control, CLI; native no-Python CLI/library for Mac/Windows/Linux (CI workflow ready, Mac build needs GitHub).
+- [ ] Researcher docs: reproducible pipeline (dump, train decoder, train ProsodyNet, export, eval), model card with docs/METRICS.md numbers.

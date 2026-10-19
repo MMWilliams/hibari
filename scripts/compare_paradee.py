@@ -9,7 +9,7 @@ import numpy as np, soundfile as sf, torch
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "kokoro_patched")); sys.path.insert(0, os.path.join(ROOT, "export"))
-from infer_numpy import Tiny, istft  # noqa: E402
+from infer_numpy import Tiny  # noqa: E402
 
 SR = 24000
 ap = argparse.ArgumentParser()

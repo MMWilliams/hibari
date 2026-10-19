@@ -1,5 +1,6 @@
-"""Export TinyKokoro to ONNX: ids [1,L] -> logmag, phase [1,601,F]. Durations and the token->frame
-expansion are inside the graph; the iSTFT is left to the runtime (numpy irfft in infer_numpy.py).
+"""Export TinyKokoro to ONNX: ids [1,L] -> logmag, phase [1,601,F] (src models: lh, theta, ln, lr,
+phi [1,601,F] and f0 [1,F]). Durations and the token->frame expansion are inside the graph; the pulse
+source, noise and iSTFT are left to the runtime (numpy in infer_numpy.py).
 Writes tiny.onnx, tiny.int8.onnx and vocab.json next to --out."""
 import sys, os, json, argparse
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "training"))
@@ -50,7 +51,7 @@ class Export(nn.Module):
         tok = (frames[:, None] >= cum[None, :]).sum(1)            # [F]
         hf = torch.index_select(h, 2, tok)                        # [1,C,F]
         f0, n = m.prosody(hf)
-        return m.decode(hf, f0, n)
+        return (*m.decode(hf, f0, n), f0) if m.src else m.decode(hf, f0, n)
 
 
 def fold_weight_transposes(path):
@@ -87,9 +88,10 @@ def main():
         ref = ex(ids)
         (lm0, *_), _ = model.infer(ids)
         assert torch.allclose(lm0, ref[0], atol=1e-4), (lm0 - ref[0]).abs().max()
+    names = ["lh", "theta", "ln", "lr", "phi"] if model.src else ["logmag", "phase"]
+    axes = {"ids": {1: "L"}, **{k: {2: "F"} for k in names}, **({"f0": {1: "F"}} if model.src else {})}
     torch.onnx.export(ex, (ids,), a.out, dynamo=False, opset_version=17, do_constant_folding=False, input_names=["ids"],
-                      output_names=["logmag", "phase"],
-                      dynamic_axes={"ids": {1: "L"}, "logmag": {2: "F"}, "phase": {2: "F"}})
+                      output_names=names + (["f0"] if model.src else []), dynamic_axes=axes)
     onnx.checker.check_model(a.out)
     fold_weight_transposes(a.out)
     q = a.out.replace(".onnx", ".int8.onnx")
@@ -105,7 +107,7 @@ def main():
     import onnxruntime as ort
     for p in (a.out, q):
         s = ort.InferenceSession(p, providers=["CPUExecutionProvider"])
-        lm, ph = s.run(None, {"ids": ids.numpy()})
+        lm = s.run(None, {"ids": ids.numpy()})[0]
         err = np.abs(lm - ref[0].numpy()).max()
         print(f"{p}: {os.path.getsize(p)/1e6:.2f} MB  frames {lm.shape[-1]}  max|logmag err| {err:.4f}")
 

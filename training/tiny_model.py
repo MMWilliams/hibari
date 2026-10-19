@@ -75,7 +75,7 @@ class TinyKokoro(nn.Module):
         self.dec_in = nn.Conv1d(c_text + 2, c_dec, 7, padding=3)
         self.dec = nn.ModuleList([ConvNeXt(c_dec, dec_ff) for _ in range(dec_blocks)])
         self.dec_norm = nn.LayerNorm(c_dec)
-        self.bins = n_fft // 2 + 1
+        self.bins, self.src = n_fft // 2 + 1, src
         self.head = nn.Linear(c_dec, (5 if src else 2) * self.bins)
         if src:                                            # free branch starts quiet so the source carries voicing
             with torch.no_grad():

@@ -180,6 +180,16 @@ def to_wav(parts, f0, n_fft=N_FFT, hop=HOP):
     return torch.istft(spec, n_fft, hop, n_fft, win, center=True, length=Fr * hop)
 
 
+@torch.no_grad()
+def infer_pnet(m, pn, ids, speed=1.0):
+    """The shipping combination: ProsodyNet durations and F0/energy, TinyKokoro text features and decoder."""
+    pad = torch.zeros_like(ids, dtype=torch.bool)
+    hp, logd = pn.encode(ids, pad)
+    dur = torch.round(torch.expm1(logd) / speed).clamp(min=1).long()
+    f0, n = pn.prosody(m.expand(hp, dur))
+    return m.decode(m.expand(m.text(ids, pad), dur), f0, n), f0
+
+
 if __name__ == "__main__":
     import json, sys, time
     torch.set_num_threads(1)

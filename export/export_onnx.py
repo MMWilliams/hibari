@@ -1,15 +1,17 @@
 """Export TinyKokoro to ONNX: ids [1,L] -> logmag, phase [1,601,F] (src models: lh, theta, ln, lr,
 phi [1,601,F] and f0 [1,F]). Durations and the token->frame expansion are inside the graph; the pulse
 source, noise and iSTFT are left to the runtime (numpy in infer_numpy.py).
+--prosody <ckpt> puts a ProsodyNet in the graph: it gives the durations and F0/energy, TinyKokoro
+gives the text features and the decoder (its own duration/prosody heads are left out).
 Writes tiny.onnx, tiny.int8.onnx and vocab.json next to --out."""
 import sys, os, json, argparse
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "training"))
 import _env  # noqa
-import collections
+
 import numpy as np, torch, torch.nn as nn, onnx
 from onnxruntime.quantization import quantize_dynamic, QuantType
 from onnx import numpy_helper
-from tiny_model import TinyKokoro
+from tiny_model import TinyKokoro, ProsodyNet, infer_pnet
 
 
 def attn_layer(layer, x, heads):
@@ -28,49 +30,63 @@ def attn_layer(layer, x, heads):
 
 
 class Export(nn.Module):
-    def __init__(self, m):
-        super().__init__(); self.m = m
+    def __init__(self, m, pn=None):
+        super().__init__(); self.m, self.pn = m, pn
 
-    def encode(self, ids):
-        te = self.m.text
+    @staticmethod
+    def encode(te, ids):                                          # TextEncoder, no padding
         x = te.emb(ids).transpose(1, 2)
         for c in te.convs:
             x = c(x)
         x = x.transpose(1, 2)
         for _ in range(te.layers):
             x = attn_layer(te.attn, x, te.attn.self_attn.num_heads)
-        h = te.norm(x).transpose(1, 2)
-        return h, self.m.dur(h).squeeze(1)
+        return te.norm(x).transpose(1, 2)                         # [1,C,L]
 
     def forward(self, ids):                                       # [1,L] int64
-        m = self.m
-        h, logd = self.encode(ids)                                # [1,C,L], [1,L]
-        dur = torch.round(torch.exp(logd[0]) - 1.0).clamp(min=1).long()
+        m, pn = self.m, self.pn
+        h = self.encode(m.text, ids)                              # decoder's text features
+        side = pn if pn is not None else m                        # durations and F0/energy come from here
+        hp = self.encode(pn.text, ids) if pn is not None else h
+        logd = side.dur(hp)[0, 0]                                 # [L]
+        dur = torch.round(torch.exp(logd) - 1.0).clamp(min=1).long()
         cum = torch.cumsum(dur, 0)                                # frame f belongs to the first token with cum > f
         frames = torch.arange(dur.sum(), device=ids.device)         # cum[-1] mis-exports
         tok = (frames[:, None] >= cum[None, :]).sum(1)            # [F]
         hf = torch.index_select(h, 2, tok)                        # [1,C,F]
-        f0, n = m.prosody(hf)
-        return (*m.decode(hf, f0, n), f0) if m.src else m.decode(hf, f0, n)
+        f0, n = side.prosody(hf if pn is None else torch.index_select(hp, 2, tok))
+        parts = m.decode(hf, f0, n)
+        return (*parts, f0) if m.src else parts
 
 
 def fold_weight_transposes(path):
     """torch's constant folding mis-folds the dynamic duration path (wrong frame count), so export runs
-    without it and Linear weights come out as Transpose(W). Fold those so the quantizer sees them."""
+    without it and Linear weights come out as Transpose(W), one per use (the shared attention layer
+    transposes its weights every repeat). Fold each (W, perm) once and point all consumers at it, so
+    the quantizer sees plain MatMul weights."""
     m = onnx.load(path)
     g = m.graph
     inits = {t.name: t for t in g.initializer}
-    used = collections.Counter(i for n in g.node for i in n.input)
-    rename, drop = {}, []
+    folded, rename, drop = {}, {}, []
     for n in g.node:
-        if n.op_type == "Transpose" and n.input[0] in inits and used[n.input[0]] == 1:
-            w = numpy_helper.to_array(inits[n.input[0]])
-            perm = next(a.ints for a in n.attribute if a.name == "perm")
-            t = numpy_helper.from_array(np.ascontiguousarray(w.transpose(perm)), n.output[0])
-            g.initializer.remove(inits[n.input[0]]); g.initializer.append(t)
+        if n.op_type == "Transpose" and n.input[0] in inits:
+            perm = tuple(next(a.ints for a in n.attribute if a.name == "perm"))
+            key = (n.input[0], perm)
+            if key not in folded:
+                w = numpy_helper.to_array(inits[n.input[0]])
+                g.initializer.append(numpy_helper.from_array(np.ascontiguousarray(w.transpose(perm)), n.output[0]))
+                folded[key] = n.output[0]
+            rename[n.output[0]] = folded[key]
             drop.append(n)
     for n in drop:
         g.node.remove(n)
+    for n in g.node:
+        for i, x in enumerate(n.input):
+            if x in rename:
+                n.input[i] = rename[x]
+    used = {i for n in g.node for i in n.input}
+    for t in [t for t in g.initializer if t.name not in used]:
+        g.initializer.remove(t)
     onnx.save(m, path)
 
 
@@ -78,18 +94,26 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", default="runs/tiny_v1/last.pt")
     ap.add_argument("--out", default="export/tiny.onnx")
+    ap.add_argument("--prosody", help="ProsodyNet ckpt: its durations and F0/energy replace TinyKokoro's heads")
     a = ap.parse_args()
     c = torch.load(a.ckpt, map_location="cpu", weights_only=False)
     model = TinyKokoro(**c.get("kw", {})).eval()
     model.load_state_dict(c["model"])
-    ex = Export(model).eval()
+    pn = None
+    if a.prosody:
+        cp = torch.load(a.prosody, map_location="cpu", weights_only=False)
+        pn = ProsodyNet(**cp["kw"]).eval()
+        pn.load_state_dict(cp["model"])
+    ex = Export(model, pn).eval()
     ids = torch.tensor([[0, 50, 83, 54, 156, 57, 135, 0]])
     with torch.no_grad():
         ref = ex(ids)
-        (lm0, *_), _ = model.infer(ids)
-        assert torch.allclose(lm0, ref[0], atol=1e-4), (lm0 - ref[0]).abs().max()
+        parts, f0 = infer_pnet(model, pn, ids) if pn else model.infer(ids)
+        for r, t in zip(ref, (*parts, f0)):
+            assert torch.allclose(t, r, atol=1e-4), (t - r).abs().max()
     names = ["lh", "theta", "ln", "lr", "phi"] if model.src else ["logmag", "phase"]
     axes = {"ids": {1: "L"}, **{k: {2: "F"} for k in names}, **({"f0": {1: "F"}} if model.src else {})}
+    os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
     torch.onnx.export(ex, (ids,), a.out, dynamo=False, opset_version=17, do_constant_folding=False, input_names=["ids"],
                       output_names=names + (["f0"] if model.src else []), dynamic_axes=axes)
     onnx.checker.check_model(a.out)
@@ -107,9 +131,13 @@ def main():
     import onnxruntime as ort
     for p in (a.out, q):
         s = ort.InferenceSession(p, providers=["CPUExecutionProvider"])
-        lm = s.run(None, {"ids": ids.numpy()})[0]
-        err = np.abs(lm - ref[0].numpy()).max()
-        print(f"{p}: {os.path.getsize(p)/1e6:.2f} MB  frames {lm.shape[-1]}  max|logmag err| {err:.4f}")
+        outs = s.run(None, {"ids": ids.numpy()})
+        mb = os.path.getsize(p) / 1e6
+        if outs[0].shape == ref[0].shape:
+            err = max(np.abs(o - r.numpy()).max() for o, r in zip(outs, ref))
+            print(f"{p}: {mb:.2f} MB  frames {outs[0].shape[-1]}  max|err| over all outputs {err:.4f}")
+        else:
+            print(f"{p}: {mb:.2f} MB  frames {outs[0].shape[-1]} (torch {ref[0].shape[-1]}): durations differ")
 
 
 if __name__ == "__main__":

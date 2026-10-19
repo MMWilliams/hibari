@@ -94,6 +94,7 @@ def main():
     ap.add_argument("--snap-every", type=int, default=10000)
     ap.add_argument("--resume", action="store_true")
     ap.add_argument("--probe", action="store_true")
+    ap.add_argument("--init", help="copy same-shape weights from this checkpoint (e.g. a narrower run's text side)")
     a = ap.parse_args()
 
     dev = "cuda"
@@ -135,6 +136,12 @@ def main():
             o.load_state_dict(c[k])
         step = c["step"]
         print(f"[*] resumed at {step}", flush=True)
+    elif a.init:
+        src = torch.load(a.init, map_location="cpu", weights_only=False)["model"]
+        own = model.state_dict()
+        keep = {k: v for k, v in src.items() if k in own and own[k].shape == v.shape}
+        model.load_state_dict(keep, strict=False)
+        print(f"[*] init {len(keep)}/{len(own)} tensors from {a.init}", flush=True)
 
     dl = DataLoader(Dist(train_rows), batch_size=a.batch, shuffle=True, collate_fn=collate,
                     num_workers=4, drop_last=True, pin_memory=True, persistent_workers=True)

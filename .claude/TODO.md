@@ -5,6 +5,7 @@ Student = training/tiny_model.py (1.34M params, frame-rate Vocos-style iSTFT hea
 Baseline on this desktop, 1 thread: tiny RTF 0.0038 vs Kokoro-7M-Distill 0.0496.
 
 ## Open
+- [ ] GAN phase is slow: 15 it/s before step 2000, ~1.8 it/s after (MPD + MRD + TPRLS on 16 x 1.6 s crops). 150k steps = ~23 h. Profile and fix (bf16 autocast for discriminators, smaller GAN crop, fewer MRD resolutions, drop TPRLS) before the long run.
 - [ ] Teacher dump: 30k sentences, 3 shards on GPU 1 (logs/dump*.log). When done: restart training with --resume so it reads the full index.
 - [ ] Training run runs/tiny_v1 (GPU 0, logs/train_v1.log). Listen to snap/*k_eval*.wav at each 10k; pick by ear, not by loss.
 - [ ] ONNX export of TinyKokoro up to (logmag, phase); iSTFT via numpy irfft outside the graph (a DFT matrix in-graph costs more than the net).

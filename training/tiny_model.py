@@ -24,9 +24,9 @@ N_FFT, HOP, SR = 1200, 300, 24000
 
 
 class ConvNeXt(nn.Module):
-    def __init__(self, c, ff, k=7):
+    def __init__(self, c, ff, k=7, dil=1):
         super().__init__()
-        self.dw = nn.Conv1d(c, c, k, padding=k // 2, groups=c)
+        self.dw = nn.Conv1d(c, c, k, padding=dil * (k // 2), dilation=dil, groups=c)
         self.norm = nn.LayerNorm(c)
         self.pw1, self.pw2 = nn.Linear(c, ff), nn.Linear(ff, c)
         self.gamma = nn.Parameter(torch.full((c,), 1e-2))
@@ -62,6 +62,36 @@ class TextEncoder(nn.Module):
         return self.norm(x).transpose(1, 2) * m           # [B,C,L]
 
 
+def subframes(y):                                         # [B,4,F40] -> F0, N [B,F80]
+    B, _, Fr = y.shape
+    y = y.view(B, 2, 2, Fr).permute(0, 1, 3, 2).reshape(B, 2, 2 * Fr)
+    return y[:, 0] * 100.0, y[:, 1] * 5.0                 # teacher scale: F0 Hz, N ~[-10, 8]
+
+
+class ProsodyNet(nn.Module):
+    """Text side trained on its own, on whole sentences (Paradee's split): durations and the 80 Hz
+    F0/energy curves. Wider, deeper and with dilated context, since TinyKokoro's crop-trained prosody
+    head came out ~1 semitone off and flatter than the teacher, and pitch was the remaining gap."""
+
+    def __init__(self, n_tok=178, c=192, layers=6, heads=2, c_pro=192, dils=(1, 2, 4, 8, 1, 2)):
+        super().__init__()
+        self.text = TextEncoder(n_tok, c, layers, heads, 2 * c)
+        self.dur = nn.Sequential(nn.Conv1d(c, c, 3, padding=1), nn.GELU(), nn.Conv1d(c, 1, 1))
+        self.pro_in = nn.Conv1d(c, c_pro, 1)
+        self.pro = nn.ModuleList([ConvNeXt(c_pro, 2 * c_pro, 7, d) for d in dils])
+        self.pro_out = nn.Conv1d(c_pro, 4, 1)
+
+    def encode(self, ids, pad):
+        h = self.text(ids, pad)
+        return h, self.dur(h).squeeze(1)
+
+    def prosody(self, hf, mask=None):                      # hf [B,C,F40], mask [B,1,F40]
+        x = self.pro_in(hf)
+        for b in self.pro:
+            x = b(x, mask)
+        return subframes(self.pro_out(x))
+
+
 class TinyKokoro(nn.Module):
     def __init__(self, n_tok=178, c_text=128, text_layers=4, heads=2, c_pro=96, pro_blocks=3,
                  c_dec=128, dec_blocks=6, dec_ff=384, n_fft=N_FFT, src=False):
@@ -90,10 +120,7 @@ class TinyKokoro(nn.Module):
         x = self.pro_in(hf)
         for b in self.pro:
             x = b(x)
-        y = self.pro_out(x)                                # [B,4,F]
-        B, _, Fr = y.shape
-        y = y.view(B, 2, 2, Fr).permute(0, 1, 3, 2).reshape(B, 2, 2 * Fr)
-        return y[:, 0] * 100.0, y[:, 1] * 5.0             # teacher scale: F0 Hz, N ~[-10, 8]
+        return subframes(self.pro_out(x))
 
     def decode(self, hf, f0, n):                           # hf [B,C,F40], f0/n [B,F80] -> parts, each [B,bins,F80]
         x = hf.repeat_interleave(2, dim=-1)

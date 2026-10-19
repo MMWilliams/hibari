@@ -10,20 +10,21 @@ import infer_numpy as inf
 outs = [inf.Tiny(sys.argv[1]).spec(r["ids"]) for r in json.load(open("runs/tiny_v1/eval_rows.json"))]
 secs = sum(o[0].shape[1] for o in outs) * inf.HOP / inf.SR
 T = {}
+rng = np.random.default_rng()
 def tick(k, t0):
     T[k] = T.get(k, 0.0) + time.perf_counter() - t0
 for rep in range(3):
     for lh, th, ln, lr, phi, f0 in outs:
         t = time.perf_counter(); p = inf.pulses(f0); tick("pulses", t)
-        t = time.perf_counter(); E = inf.stft(p, lh.shape[1]) / (inf.N_FFT / 4); tick("stft", t)
-        t = time.perf_counter(); z = np.random.default_rng().standard_normal((2, *lh.shape), dtype=np.float32); tick("noise", t)
+        t = time.perf_counter(); spec = inf.stft(p, lh.shape[1], inf.WIN_SRC); tick("stft", t)
+        t = time.perf_counter(); z = rng.standard_normal((lh.shape[0], 2 * lh.shape[1]), dtype=np.float32).view(np.complex64); tick("noise", t)
         t = time.perf_counter()
-        er, ei = E.real.astype(np.float32), E.imag.astype(np.float32)
-        ah, an, ar, c = inf.ex(lh), inf.ex(ln), inf.ex(lr), np.pi * np.tanh(th)
-        cc, sc = np.cos(c), np.sin(c)
-        spec = np.empty(lh.shape, np.complex64)
-        spec.real = ah * (cc * er - sc * ei) + an * z[0] + ar * np.cos(phi)
-        spec.imag = ah * (sc * er + cc * ei) + an * z[1] + ar * np.sin(phi)
+        rot = np.empty(lh.shape, np.complex64)
+        c = np.tanh(th); c *= np.pi
+        np.cos(c, out=rot.real); np.sin(c, out=rot.imag); rot *= inf.ex(lh)
+        spec *= rot
+        z *= inf.ex(ln); spec += z
+        np.cos(phi, out=rot.real); np.sin(phi, out=rot.imag); rot *= inf.ex(lr); spec += rot
         tick("combine", t)
         t = time.perf_counter(); y = inf.ola(spec); tick("ola", t)
         t = time.perf_counter(); y2 = inf.synth((lh, th, ln, lr, phi), f0); tick("synth total", t)

@@ -40,8 +40,7 @@ def ola(spec, n_fft=N_FFT, hop=HOP):
     """Matches torch.istft(center=True, hann window, length=F*hop): irfft per frame, overlap-add,
     divide by the summed squared window, trim n_fft/2 on both ends. n_fft = 4*hop, so output block j
     is the sum of quarter k of frame j-k for k in 0..3: a reshape and four shifted adds, no loop."""
-    spec = spec.astype(np.complex64, copy=False)                           # [bins, F]
-    F, K = spec.shape[1], n_fft // hop
+    F, K = spec.shape[1], n_fft // hop                                      # spec [bins, F] complex64
     frames = sfft.irfft(spec.T, n=n_fft, axis=1)                            # float32 [F, n_fft]
     frames *= WIN
     frames = frames.reshape(F, K, hop)
@@ -88,27 +87,29 @@ def pulses(f0, hop=HOP, sr=SR, vthresh=40.0, fmax=11000.0):
     return e
 
 
-def stft(x, F, n_fft=N_FFT, hop=HOP):
-    """torch.stft(center=True, reflect pad, hann), first F frames -> [bins, F] complex64."""
+def stft(x, F, win=WIN, n_fft=N_FFT, hop=HOP):
+    """torch.stft(center=True, reflect pad, hann), first F frames -> contiguous [bins, F] complex64."""
     xp = np.pad(x, n_fft // 2, mode="reflect")
-    fr = np.lib.stride_tricks.sliding_window_view(xp, n_fft)[::hop][:F] * WIN
-    return sfft.rfft(fr, axis=1).T
+    fr = np.lib.stride_tricks.sliding_window_view(xp, n_fft)[::hop][:F] * win
+    return np.ascontiguousarray(sfft.rfft(fr, axis=1, overwrite_x=True).T)
+
+
+WIN_SRC = WIN / (N_FFT / 4)       # a unit cosine peaks at sum(win)/2 in the STFT, so A_h is the harmonic's magnitude
 
 
 def synth(parts, f0=None, rng=np.random.default_rng()):
+    """tiny_model.to_wav in complex64: each complex op is one pass where the real/imag form took 3-4."""
     if len(parts) == 2:
         return istft(*parts)
     lh, th, ln, lr, phi = parts
-    E = stft(pulses(f0), lh.shape[1]) / (N_FFT / 4)
-    er, ei = np.ascontiguousarray(E.real), np.ascontiguousarray(E.imag)
-    z = rng.standard_normal((2, *lh.shape), dtype=np.float32)
-    ah, an, ar = ex(lh), ex(ln), ex(lr)
+    spec = stft(pulses(f0), lh.shape[1], WIN_SRC)
+    rot = np.empty(lh.shape, np.complex64)
     c = np.tanh(th); c *= np.pi
-    cc, sc = np.cos(c), np.sin(c)
-    re = cc * er; re -= sc * ei; re *= ah; re += an * z[0]; re += ar * np.cos(phi)   # in place: half the temporaries
-    im = sc * er; im += cc * ei; im *= ah; im += an * z[1]; im += ar * np.sin(phi)
-    spec = np.empty(lh.shape, np.complex64)
-    spec.real, spec.imag = re, im
+    np.cos(c, out=rot.real); np.sin(c, out=rot.imag); rot *= ex(lh)
+    spec *= rot
+    z = rng.standard_normal((lh.shape[0], 2 * lh.shape[1]), dtype=np.float32).view(np.complex64)
+    z *= ex(ln); spec += z
+    np.cos(phi, out=rot.real); np.sin(phi, out=rot.imag); rot *= ex(lr); spec += rot
     return ola(spec)
 
 

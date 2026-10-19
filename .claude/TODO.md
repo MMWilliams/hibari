@@ -17,5 +17,5 @@ Baseline on this desktop, 1 thread: tiny RTF 0.0038 vs Kokoro-7M-Distill 0.0496.
 
 ## Portability (reese 2026-10-18: "needs to run on many devices")
 - [ ] Keep the graph to portable ops only: conv1d (incl. depthwise), linear, layernorm, gelu, softmax attention. Duration expansion (repeat_interleave) and iSTFT live in host code, not the graph.
-- [ ] Targets: ONNX Runtime (Windows/Linux/macOS, Android, iOS), onnxruntime-web WASM/WebGPU (browser), and a dependency-free C runtime (int8 weights, real FFT) for embedded Linux / very small CPUs.
+- [ ] Targets (reese: "any device, Mac or Windows"): Windows x64 + ARM64, macOS Apple Silicon + Intel, including old/weak laptops. No Python on the user's machine: ship a self-contained binary (dependency-free C runtime, int8 weights, real FFT; or ONNX Runtime static build) per platform, macOS as a universal binary.
 - [ ] Portable G2P: no Python/spaCy on device. Lexicon lookup (misaki gold+silver dicts, compressed) + small fallback (espeak-ng or a tiny G2P net).

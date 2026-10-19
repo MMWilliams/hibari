@@ -10,6 +10,7 @@ Baseline on this desktop, 1 thread: tiny RTF 0.0038 vs Kokoro-7M-Distill 0.0496.
 - [ ] On-device G2P: misaki+spacy is far heavier than the model. Options: (a) misaki's dictionary (us_gold/us_silver json) lookup + espeak-ng for OOV, no spacy; (b) tiny G2P net (LSTM/transformer <0.5M params, trained on misaki's dictionary + teacher phonemes in data/dist); (c) precomputed phoneme cache for a fixed phrase set. The export takes phoneme ids (export/vocab.json), so G2P is a separate module.
 - [ ] Measure on a real low-end device (or emulate: 1 thread, low clock). numpy 1.26 irfft runs in float64; scipy.fft / pocketfft float32 may be faster on ARM.
 - [ ] ConvInteger (int8 convs) is 2x slower than fp32 Conv in onnxruntime 1.29 on x86: export quantizes MatMul only (2.53 MB). Re-test on ARM, or QLinearConv static quantization.
+- [ ] reese on 10k samples: "eval0 is the best but still needs to improve". Sent 60k teacher/student A/B (scripts/ab_teacher.py <snap>). Eval rows changed at the full-index restart, so 10k and later snaps are different sentences. Next lever if the 150k endpoint still falls short by ear: WavLM feature matching (below), then a wider decoder (c_dec 160, still frame-rate).
 - [ ] If audio sounds robotic: add WavLM feature-matching loss (Kokoro-7M notes say it fixes phase).
 - [ ] Corpus is mostly declarative prose: add questions/exclamations/dialogue for prosody range.
 

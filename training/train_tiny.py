@@ -13,6 +13,7 @@ from torch.utils.data import Dataset, DataLoader
 
 from tiny_model import TinyKokoro, spec_to_wav, HOP, SR
 from styletts2_gan.discriminators import MultiPeriodDiscriminator, MultiResSpecDiscriminator
+from styletts2_gan import losses_styletts2 as L
 from styletts2_gan.losses_styletts2 import GeneratorLoss, DiscriminatorLoss, MultiResolutionSTFTLoss
 
 SPF = 600   # samples per 40 Hz duration frame
@@ -79,6 +80,9 @@ def main():
     ap.add_argument("--steps", type=int, default=150000)
     ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--crop", type=int, default=64, help="40 Hz frames per training crop (1.6 s)")
+    ap.add_argument("--gan-crop", type=int, default=32,
+                    help="40 Hz frames the discriminators see (random sub-window of --crop)")
+    ap.add_argument("--tprls", action="store_true", help="StyleTTS2 relativistic GAN term (slower)")
     ap.add_argument("--lr", type=float, default=2e-4)
     ap.add_argument("--disc-warmup", type=int, default=2000)
     ap.add_argument("--mel-w", type=float, default=45.0)
@@ -108,7 +112,11 @@ def main():
     kw = json.loads(a.model)
     model = TinyKokoro(**kw).to(dev)
     print(f"[*] student {sum(p.numel() for p in model.parameters())/1e6:.3f}M", flush=True)
-    mpd, msd = MultiPeriodDiscriminator().to(dev), MultiResSpecDiscriminator().to(dev)
+    # Vocos hops (fft/4) instead of UnivNet's 120/240/50: 2-2.5x fewer MRD frames
+    mpd = MultiPeriodDiscriminator().to(dev)
+    msd = MultiResSpecDiscriminator(fft_sizes=[1024, 2048, 512], hop_sizes=[256, 512, 128],
+                                    win_lengths=[1024, 2048, 512]).to(dev)
+    L.USE_TPRLS = a.tprls
     gen_loss, disc_loss = GeneratorLoss(mpd, msd).to(dev), DiscriminatorLoss(mpd, msd).to(dev)
     stft_loss, logmel = MultiResolutionSTFTLoss().to(dev), LogMel().to(dev)
 
@@ -166,18 +174,29 @@ def main():
               f"pro {l_pro.item():.3f}", flush=True)
         return
 
-    model.train(); t0 = time.time(); acc = {}
+    G = a.gan_crop * SPF
+    idx = torch.arange(G, device=dev)
+
+    def gan_window(y, y_hat):
+        """Discriminators get a random 0.8 s sub-window per sample: the GAN step was 85% of the
+        step time at 1.6 s, and HiFi-GAN/Vocos train their discriminators on <1 s segments."""
+        off = torch.randint(0, y.shape[-1] - G + 1, (y.shape[0], 1), device=dev)
+        ix = (off + idx)[:, None]                                        # [B,1,G]
+        return y[:, None].gather(2, ix), y_hat[:, None].gather(2, ix)
+
+    model.train(); t0 = time.time(); acc = {}; t_log = time.time(); s_log = step
     while step < a.steps:
         for batch in dl:
             if step >= a.steps:
                 break
             y, y_hat, l_dur, l_pro = run(batch)
-            y1, yh1 = y[:, None], y_hat[:, None]
             gan = step >= a.disc_warmup
 
             if gan:
+                y1, yh1 = gan_window(y, y_hat)
                 opt_d.zero_grad(set_to_none=True)
-                d_l = disc_loss(y1, yh1.detach())
+                with torch.autocast("cuda", dtype=torch.bfloat16):
+                    d_l = disc_loss(y1, yh1.detach())
                 d_l.backward()
                 torch.nn.utils.clip_grad_norm_(list(mpd.parameters()) + list(msd.parameters()), 10.0)
                 opt_d.step()
@@ -188,7 +207,11 @@ def main():
             l_mel = F.l1_loss(logmel(y_hat), logmel(y))
             l_stft = stft_loss(y_hat, y)
             l_sil = silence_loss(y, y_hat)
-            l_g = gen_loss(y1, yh1) if gan else torch.zeros((), device=dev)
+            if gan:
+                with torch.autocast("cuda", dtype=torch.bfloat16):
+                    l_g = gen_loss(y1, yh1)
+            else:
+                l_g = torch.zeros((), device=dev)
             loss = (a.mel_w * l_mel + a.stft_w * l_stft + a.sil_w * l_sil + a.dur_w * l_dur
                     + a.pro_w * l_pro + l_g)
             loss.backward()
@@ -198,11 +221,12 @@ def main():
 
             for k, v in (("mel", l_mel), ("stft", l_stft), ("sil", l_sil), ("dur", l_dur),
                          ("pro", l_pro), ("gen", l_g), ("disc", d_l)):
-                acc[k] = acc.get(k, 0.0) + float(v)
+                acc[k] = acc.get(k, 0.0) + v.detach()                   # no per-step GPU sync
             if step % 100 == 0:
-                print(f"  step {step}/{a.steps}  " + "  ".join(f"{k} {v/100:.4f}" for k, v in acc.items())
-                      + f"  {step/(time.time()-t0):.1f} it/s", flush=True)
-                acc = {}
+                now = time.time()
+                print(f"  step {step}/{a.steps}  " + "  ".join(f"{k} {float(v)/100:.4f}" for k, v in acc.items())
+                      + f"  {(step-s_log)/(now-t_log):.1f} it/s", flush=True)
+                acc = {}; t_log, s_log = now, step
             if step % 2000 == 0:
                 tmp = out / "last.pt.tmp"
                 torch.save({"model": model.state_dict(), "mpd": mpd.state_dict(), "msd": msd.state_dict(),

@@ -5,17 +5,14 @@ Student = training/tiny_model.py (1.34M params, frame-rate Vocos-style iSTFT hea
 Baseline on this desktop, 1 thread: tiny RTF 0.0038 vs Kokoro-7M-Distill 0.0496.
 
 ## Open
-- [ ] GAN phase is slow: 15 it/s before step 2000, ~1.8 it/s after (MPD + MRD + TPRLS on 16 x 1.6 s crops). 150k steps = ~23 h. Profile and fix (bf16 autocast for discriminators, smaller GAN crop, fewer MRD resolutions, drop TPRLS) before the long run.
-- [ ] Teacher dump: 30k sentences, 3 shards on GPU 1 (logs/dump*.log). When done: restart training with --resume so it reads the full index.
-- [ ] Training run runs/tiny_v1 (GPU 0, logs/train_v1.log). Listen to snap/*k_eval*.wav at each 10k; pick by ear, not by loss.
-- [ ] ONNX export of TinyKokoro up to (logmag, phase); iSTFT via numpy irfft outside the graph (a DFT matrix in-graph costs more than the net).
-- [ ] int8 dynamic quantization of the ONNX; measure size + RTF on 1 thread.
-- [ ] On-device G2P: misaki+spacy is far heavier than the model. Options: misaki dictionary lookup + espeak-ng fallback, or a tiny G2P net.
-- [ ] Measure on a real low-end device (or emulate: 1 thread, low clock).
+- [ ] Teacher dump: 30k sentences, 3 shards on GPU 1 (logs/dump*.log), expected done ~22:00 EDT 2026-10-18. When done: restart training with --resume so it reads the full index (current run started on 17,197 rows).
+- [ ] Training run runs/tiny_v1 (GPU 0, logs/train_v1.log, ~7.2 it/s in GAN phase after the fix). Listen to snap/*k_eval*.wav at each 10k; pick by ear, not by loss. `python scripts/check_snaps.py` = static/silence check only.
+- [ ] On-device G2P: misaki+spacy is far heavier than the model. Options: (a) misaki's dictionary (us_gold/us_silver json) lookup + espeak-ng for OOV, no spacy; (b) tiny G2P net (LSTM/transformer <0.5M params, trained on misaki's dictionary + teacher phonemes in data/dist); (c) precomputed phoneme cache for a fixed phrase set. The export takes phoneme ids (export/vocab.json), so G2P is a separate module.
+- [ ] Measure on a real low-end device (or emulate: 1 thread, low clock). numpy 1.26 irfft runs in float64; scipy.fft / pocketfft float32 may be faster on ARM.
+- [ ] ConvInteger (int8 convs) is 2x slower than fp32 Conv in onnxruntime 1.29 on x86: export quantizes MatMul only (2.53 MB). Re-test on ARM, or QLinearConv static quantization.
 - [ ] If audio sounds robotic: add WavLM feature-matching loss (Kokoro-7M notes say it fixes phase).
 - [ ] Corpus is mostly declarative prose: add questions/exclamations/dialogue for prosody range.
 
-## Portability (reese 2026-10-18: "needs to run on many devices")
-- [ ] Keep the graph to portable ops only: conv1d (incl. depthwise), linear, layernorm, gelu, softmax attention. Duration expansion (repeat_interleave) and iSTFT live in host code, not the graph.
-- [ ] Targets (reese: "any device, Mac or Windows"): Windows x64 + ARM64, macOS Apple Silicon + Intel, including old/weak laptops. No Python on the user's machine: ship a self-contained binary (dependency-free C runtime, int8 weights, real FFT; or ONNX Runtime static build) per platform, macOS as a universal binary.
-- [ ] Portable G2P: no Python/spaCy on device. Lexicon lookup (misaki gold+silver dicts, compressed) + small fallback (espeak-ng or a tiny G2P net).
+## Done
+- [x] GAN phase 1.8 -> ~7.2 it/s (batch 16): bf16 autocast for D/G losses, MRD hops fft/4 (Vocos), real+fake batched per discriminator, 0.8 s random GAN sub-window, TPRLS off (--tprls restores). Step was WDDM launch-bound (~3300 launches/step).
+- [x] ONNX export (export/export_onnx.py, durations in-graph, dynamic L) + numpy/onnxruntime inference (export/infer_numpy.py) + int8 dynamic quant. numpy iSTFT matches torch.istft to 1e-7.

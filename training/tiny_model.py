@@ -9,6 +9,12 @@ makes the waveform. The fixed voice removes style conditioning entirely.
            -> repeat to 40 Hz -> prosody convs -> F0, energy at 80 Hz (teacher-supervised)
            -> 80 Hz decoder (features + F0 + energy) -> |S|, angle(S) -> iSTFT (n_fft 1200, hop 300)
 
+With src=True the decoder no longer guesses absolute phase, which must advance by 2*pi*f*hop/sr
+every frame and came out incoherent (harmonics above ~500 Hz broke up). Instead it filters a
+band-limited pulse train built from F0 (two sines per sample), adds filtered noise, and keeps a
+small free-phase branch for transients:
+    S = A_h e^{i pi tanh(theta)} STFT(pulses) + A_n Z + A_r e^{i phi}
+
 The network stops at the spectrum; `spec_to_wav` is outside it so an on-device runtime can use
 a real FFT instead of an exported DFT matrix, which would cost more than the whole network.
 """
@@ -58,7 +64,7 @@ class TextEncoder(nn.Module):
 
 class TinyKokoro(nn.Module):
     def __init__(self, n_tok=178, c_text=128, text_layers=4, heads=2, c_pro=96, pro_blocks=3,
-                 c_dec=128, dec_blocks=6, dec_ff=384, n_fft=N_FFT):
+                 c_dec=128, dec_blocks=6, dec_ff=384, n_fft=N_FFT, src=False):
         super().__init__()
         self.text = TextEncoder(n_tok, c_text, text_layers, heads, 2 * c_text)
         self.dur = nn.Sequential(nn.Conv1d(c_text, c_text, 3, padding=1), nn.GELU(),
@@ -70,7 +76,10 @@ class TinyKokoro(nn.Module):
         self.dec = nn.ModuleList([ConvNeXt(c_dec, dec_ff) for _ in range(dec_blocks)])
         self.dec_norm = nn.LayerNorm(c_dec)
         self.bins = n_fft // 2 + 1
-        self.head = nn.Linear(c_dec, 2 * self.bins)
+        self.head = nn.Linear(c_dec, (5 if src else 2) * self.bins)
+        if src:                                            # free branch starts quiet so the source carries voicing
+            with torch.no_grad():
+                self.head.bias[3 * self.bins: 4 * self.bins] = -4.0
 
     def encode(self, ids, pad):
         h = self.text(ids, pad)
@@ -86,28 +95,27 @@ class TinyKokoro(nn.Module):
         y = y.view(B, 2, 2, Fr).permute(0, 1, 3, 2).reshape(B, 2, 2 * Fr)
         return y[:, 0] * 100.0, y[:, 1] * 5.0             # teacher scale: F0 Hz, N ~[-10, 8]
 
-    def decode(self, hf, f0, n):                           # hf [B,C,F40], f0/n [B,F80]
+    def decode(self, hf, f0, n):                           # hf [B,C,F40], f0/n [B,F80] -> parts, each [B,bins,F80]
         x = hf.repeat_interleave(2, dim=-1)
         f0f = torch.log1p(F.relu(f0))[:, None] / 5.0
         x = self.dec_in(torch.cat([x, f0f, n[:, None] / 5.0], 1))
         for b in self.dec:
             x = b(x)
         y = self.head(self.dec_norm(x.transpose(1, 2))).transpose(1, 2)
-        logmag, phase = y[:, : self.bins], y[:, self.bins:]
-        return logmag, phase                               # [B,bins,F80]
+        return y.split(self.bins, 1)                       # (logmag, phase) or (lh, theta, ln, lr, phi)
 
     @staticmethod
     def expand(h, dur):                                    # h [B,C,L], dur [B,L] ints -> [B,C,F]
         return torch.stack([torch.repeat_interleave(h[b], dur[b], dim=-1) for b in range(h.shape[0])])
 
     @torch.no_grad()
-    def infer(self, ids, speed=1.0):                       # ids [1,L] -> logmag, phase
+    def infer(self, ids, speed=1.0):                       # ids [1,L] -> decode parts, f0
         pad = torch.zeros_like(ids, dtype=torch.bool)
         h, logd = self.encode(ids, pad)
         dur = torch.round(torch.expm1(logd) / speed).clamp(min=1).long()
         hf = self.expand(h, dur)
         f0, n = self.prosody(hf)
-        return self.decode(hf, f0, n)
+        return self.decode(hf, f0, n), f0
 
 
 def spec_to_wav(logmag, phase, n_fft=N_FFT, hop=HOP):
@@ -117,10 +125,38 @@ def spec_to_wav(logmag, phase, n_fft=N_FFT, hop=HOP):
     return torch.istft(spec, n_fft, hop, n_fft, win, center=True, length=logmag.shape[-1] * hop)
 
 
+@torch.no_grad()
+def pulses(f0, hop=HOP, sr=SR, vthresh=40.0, fmax=11000.0):
+    """Zero-phase pulse train with every harmonic below fmax at unit amplitude, from the 80 Hz F0
+    curve: sum_{h<=H} cos(h t) = sin((H+1/2) t) / (2 sin(t/2)) - 1/2, so cost doesn't grow with H."""
+    f = F.interpolate(f0[:, None], scale_factor=hop, mode="linear", align_corners=False)[:, 0]
+    voiced = (f > vthresh).float()
+    f = f.clamp(min=vthresh)
+    t = 2 * math.pi * torch.frac(torch.cumsum(f.double() / sr, -1)).float()   # wrap: formula is 2pi-periodic
+    H = torch.floor(fmax / f)
+    s = torch.sin(t / 2)
+    e = torch.where(s.abs() > 1e-3, torch.sin((H + 0.5) * t) / (2 * s), H + 0.5) - 0.5
+    return e * voiced
+
+
+def to_wav(parts, f0, n_fft=N_FFT, hop=HOP):
+    if len(parts) == 2:
+        return spec_to_wav(*parts, n_fft, hop)
+    lh, th, ln, lr, phi = parts
+    Fr = lh.shape[-1]
+    win = torch.hann_window(n_fft, device=lh.device)
+    # /(n_fft/4): a unit cosine peaks at sum(win)/2 in the STFT, so A_h is the harmonic's magnitude
+    E = torch.stft(pulses(f0, hop), n_fft, hop, n_fft, win, center=True, return_complex=True)[..., :Fr] / (n_fft / 4)
+    Z = torch.randn_like(lh) + 1j * torch.randn_like(lh)
+    ex = lambda x: torch.exp(x.clamp(max=7.0))
+    spec = ex(lh) * torch.polar(torch.ones_like(th), math.pi * torch.tanh(th)) * E + ex(ln) * Z + torch.polar(ex(lr), phi)
+    return torch.istft(spec, n_fft, hop, n_fft, win, center=True, length=Fr * hop)
+
+
 if __name__ == "__main__":
-    import time
+    import json, sys, time
     torch.set_num_threads(1)
-    m = TinyKokoro().eval()
+    m = TinyKokoro(**json.loads(sys.argv[1]) if len(sys.argv) > 1 else {}).eval()
     n = sum(p.numel() for p in m.parameters())
     print(f"params {n/1e6:.3f}M")
     for k, mod in (("text", m.text), ("prosody", m.pro), ("decoder", m.dec), ("head", m.head)):
@@ -130,11 +166,12 @@ if __name__ == "__main__":
         h, logd = m.encode(ids, torch.zeros_like(ids, dtype=torch.bool))
         hf = m.expand(h, torch.full((100,), 4)[None])      # 400 frames = 10 s
         for _ in range(3):
-            spec_to_wav(*m.decode(hf, *m.prosody(hf)))
+            to_wav(m.decode(hf, *m.prosody(hf)), m.prosody(hf)[0])
         t = time.perf_counter()
         for _ in range(10):
             h, _ = m.encode(ids, torch.zeros_like(ids, dtype=torch.bool))
             hf = m.expand(h, torch.full((100,), 4)[None])
-            w = spec_to_wav(*m.decode(hf, *m.prosody(hf)))
+            f0, n = m.prosody(hf)
+            w = to_wav(m.decode(hf, f0, n), f0)
         dt = (time.perf_counter() - t) / 10
     print(f"1 thread: {dt*1000:.1f} ms for {w.shape[-1]/SR:.1f} s audio, RTF {dt/(w.shape[-1]/SR):.4f}")

@@ -85,7 +85,7 @@ def main():
     ids = torch.tensor([[0, 50, 83, 54, 156, 57, 135, 0]])
     with torch.no_grad():
         ref = ex(ids)
-        lm0, _ = model.infer(ids)
+        (lm0, *_), _ = model.infer(ids)
         assert torch.allclose(lm0, ref[0], atol=1e-4), (lm0 - ref[0]).abs().max()
     torch.onnx.export(ex, (ids,), a.out, dynamo=False, opset_version=17, do_constant_folding=False, input_names=["ids"],
                       output_names=["logmag", "phase"],

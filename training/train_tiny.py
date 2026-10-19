@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np, torch, torch.nn.functional as F, torchaudio, soundfile as sf
 from torch.utils.data import Dataset, DataLoader
 
-from tiny_model import TinyKokoro, spec_to_wav, HOP, SR
+from tiny_model import TinyKokoro, to_wav, HOP, SR
 from styletts2_gan.discriminators import MultiPeriodDiscriminator, MultiResSpecDiscriminator
 from styletts2_gan import losses_styletts2 as L
 from styletts2_gan.losses_styletts2 import GeneratorLoss, DiscriminatorLoss, MultiResolutionSTFTLoss
@@ -171,8 +171,7 @@ def main():
         # prosody sees the crop with 3x k7 receptive field; edge frames are a small minority
         f0_p, n_p = model.prosody(hf_c)
         l_pro = (f0_p - f0_t).abs().mean() / 100.0 + (n_p - n_t).abs().mean() / 5.0
-        logmag, phase = model.decode(hf_c, f0_t, n_t)                    # teacher-forced prosody
-        y_hat = spec_to_wav(logmag, phase)
+        y_hat = to_wav(model.decode(hf_c, f0_t, n_t), f0_t)              # teacher-forced prosody
         return y, y_hat, l_dur, l_pro
 
     if a.probe:
@@ -248,9 +247,9 @@ def main():
                 model.eval()
                 with torch.no_grad():
                     for j, r in enumerate(eval_rows[:3]):
-                        lm, ph = model.infer(torch.tensor([r["ids"]], device=dev))
+                        parts, f0 = model.infer(torch.tensor([r["ids"]], device=dev))
                         sf.write(out / "snap" / f"{step//1000}k_eval{j}.wav",
-                                 spec_to_wav(lm, ph)[0].cpu().numpy(), SR)
+                                 to_wav(parts, f0)[0].cpu().numpy(), SR)
                 model.train()
     print(f"[+] done at {step}", flush=True)
 

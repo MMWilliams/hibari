@@ -9,7 +9,7 @@ import numpy as np, soundfile as sf, torch
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "training"))
-from tiny_model import TinyKokoro, spec_to_wav, SR  # noqa: E402
+from tiny_model import TinyKokoro, to_wav, SR  # noqa: E402
 
 ap = argparse.ArgumentParser()
 ap.add_argument("snaps", nargs="+")
@@ -51,7 +51,7 @@ for snap in a.snaps:
             hf = m.expand(h, torch.tensor([r["dur"]]).cuda())
             for k, (x, p) in {"free": (hf_free, m.prosody(hf_free)), "t_dur": (hf, m.prosody(hf)),
                               "t_dur_pro": (hf, (f0, n))}.items():
-                y = spec_to_wav(*m.decode(x, *p))[0].cpu().numpy()
+                y = to_wav(m.decode(x, *p), p[0])[0].cpu().numpy()
                 s[k].append(mos(y))
                 if i < 3:
                     sf.write(f"{out}/{snap}_{i}_{k}.wav", y, SR)

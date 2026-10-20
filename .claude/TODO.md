@@ -34,6 +34,8 @@ Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.
   unchanged. Retraining the decoder with these levers does not close the gap; next idea would need a new approach.
 - 0.2.1 PUBLISHED 2026-10-20 (reese OK by ear): HF voices/am_fenrir_v2 (sha verified), PyPI, GitHub release v0.2.1;
   fresh PyPI install downloads fenrir v2, ~190x. API credits low: no Fable runs until reese says.
+- Ear check 2026-10-20 (runs/samples_021, 5 voices x 3 new sentences + teacher-then-hibari for kore, fable): reese
+  heard kore and fable as weakest, then after the teacher comparison: "they are fine, this is good". No voice work open.
       wavs only (scripts/ab_v2.py --no-demos) for the user's ear.
 - [ ] Then: voice_table.py --write, VOICE_GAP/METRICS/MODEL_CARD rows, TODO, commit (0.2.1 stays unreleased).
 - Second metric for the report: scripts/mcd_eval.py (DTW MCD on the 50 unseen sentences): heart 12.44, kore 10.54,

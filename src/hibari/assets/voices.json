@@ -26,11 +26,12 @@
   "language": "en-US",
   "accent": "American",
   "gender": "male",
-  "file": "am_fenrir.int8.onnx",
+  "file": "am_fenrir_v2.int8.onnx",
   "bundled": false,
-  "bytes": 7936868,
-  "sha256": "6614ce51337d8777d1115ebc01df4df82ffbaad91869e752bbbd0d50502240f3",
-  "british": false
+  "bytes": 8031158,
+  "sha256": "f59fbd87908c91f827bc21b1b89443757b9a8580db9eee20aa948deb731321f4",
+  "british": false,
+  "run": "am_fenrir_pc"
  },
  "fable": {
   "kokoro": "bm_fable",

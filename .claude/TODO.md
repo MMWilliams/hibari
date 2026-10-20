@@ -28,8 +28,12 @@ Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.
 - 2026-10-20 10:53: fenrir v2 run killed at 13.5k for a reboot; 12:05 resumed under the new limits (GPU 0 at half memory,
   HIBARI_GPU_FRAC=0.5 env switch in train_tiny/train_prosody/eval_voice/diagnose_gap/voice_common; < 20 GB RAM).
   Chain: logs/voices/wrap.sh (emma + fable v2 per-channel export/eval, fenrir resume -> post -> MCD -> per-channel).
-- [ ] fenrir v2: if its per-channel export beats 4.385 (am_fenrir_pc) stage it instead, else keep am_fenrir_pc staged.
-- [ ] emma / fable v2 per-channel vs shipped per-channel (4.173 / 4.160): stage only if clearly better; else three-way A/B
+- fenrir v2 (lin-w 20, resumed after reboot): per-channel int8 4.338 / 2.4 % / MCD 10.86 < am_fenrir_pc 4.385: NOT better.
+  emma v2 per-channel 4.132, fable v2 4.150: below shipped per-channel (4.173 / 4.160). Lever 1 full runs lose on all three.
+- Result: 0.2.1 = fenrir re-exported per-channel only (am_fenrir_v2.int8.onnx staged, registry points to it); emma and fable
+  unchanged. Retraining the decoder with these levers does not close the gap; next idea would need a new approach.
+- [ ] reese listens to runs/voices/am_fenrir_pc/ab*_teacher_shipped_improved.wav, then: upload hf_stage/voices_v2 to HF
+      voices/, push, gh workflow run publish.yml -f publish=true, release v0.2.1. API credits low (2026-10-20): no Fable runs.
       wavs only (scripts/ab_v2.py --no-demos) for the user's ear.
 - [ ] Then: voice_table.py --write, VOICE_GAP/METRICS/MODEL_CARD rows, TODO, commit (0.2.1 stays unreleased).
 - Second metric for the report: scripts/mcd_eval.py (DTW MCD on the 50 unseen sentences): heart 12.44, kore 10.54,

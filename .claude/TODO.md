@@ -20,7 +20,8 @@ Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.
   kept (runs/voices/bf_emma = v2, bf_emma_v1 = first run; export/bf_emma = v2). emma v3s experiment on GPU 1 from 03:27:
   heart's third stage redone on emma data (init runs/tiny_v2/snap/60k.pt, 60k steps, lr 2e-4); cut if not evaluated by 06:00.
   fable (bm_fable): done 02:54, snapshot 25k, staged + registered (numbers in runs/voices/bm_fable/summary.json).
-  kore (af_kore): training on GPU 0 from 02:56 (logs/voices/gpu0b.sh), expected done ~04:20.
+  kore (af_kore): done 04:09, snapshot 25k; 50 unseen: int8 4.46 / 2.5% vs teacher 4.52 / 2.4%, 170x; staged + registered.
+  fable (bm_fable): int8 4.17 / 2.6% vs teacher 4.33 / 2.6%, 167x. All four pass the gate (WER within 0.5, parity, demos).
 - [ ] Listen to runs/voices/*/ab*.wav and demo*.wav; then upload hf_stage/voices/ to HF (voices/ folder), re-upload
       hf/README.md, bump + publish 0.2.0 (gh workflow run publish.yml -f publish=true), GitHub release.
 - Overnight 2026-10-20 00:25 (user via tts-fast session; logs/fable_task5.md): limits lifted, both GPUs, keep ~6 GB RAM

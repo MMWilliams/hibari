@@ -19,6 +19,7 @@ registered = {v["file"] for v in VOICES.values() if not v.get("bundled")}
 missing = registered - set(files)
 assert not missing, f"registry names files that are not staged: {missing}"
 cmds = [["hf", "upload", REPO, stage, "voices", "--repo-type", "model", "--commit-message", "voices: " + ", ".join(sorted(registered))],
+        ["hf", "upload", REPO, os.path.join(ROOT, "hf_stage", "samples"), "samples", "--repo-type", "model", "--commit-message", "samples: one demo per voice"],
         ["hf", "upload", REPO, os.path.join(ROOT, "hf", "README.md"), "README.md", "--repo-type", "model", "--commit-message", "model card: voices"]]
 for c in cmds:
     print("$", " ".join(c), flush=True)

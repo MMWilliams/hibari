@@ -42,5 +42,16 @@
   "bytes": 7936868,
   "sha256": "c28529302f2d27cd12f62625c24425888c4e3c2675583100ec530259136b8bc6",
   "british": true
+ },
+ "kore": {
+  "kokoro": "af_kore",
+  "language": "en-US",
+  "accent": "American",
+  "gender": "female",
+  "file": "af_kore.int8.onnx",
+  "bundled": false,
+  "bytes": 7936868,
+  "sha256": "346885752673e45d42f9864c9e2432094bc4b6385df060d4b83273da764d2fa9",
+  "british": false
  }
 }

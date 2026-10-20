@@ -44,8 +44,10 @@ seconds / wall seconds on one onnxruntime thread with the numpy DSP, measured wh
 | emma | bf_emma (British female) | 4.40 / 2.9% | 4.16 / 2.6% | 0.24 | 139 | 7.94 |
 | fenrir | am_fenrir (American male) | 4.48 / 2.6% | 4.35 / 2.9% | 0.13 | 166 | 7.94 |
 | fable | bm_fable (British male) | 4.33 / 2.6% | 4.17 / 2.6% | 0.16 | 167 | 7.94 |
+| kore | af_kore (American female) | 4.52 / 2.4% | 4.45 / 2.5% | 0.06 | 170 | 7.94 |
 
 - emma: snapshot 40k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.394; 20k 4.107, 30k 4.125, 40k 4.174, 50k 4.174, 60k 4.173).
 - fenrir: snapshot 30k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.496; 10k 4.382, 15k 4.400, 20k 4.397, 25k 4.403, 30k 4.414).
 - fable: snapshot 25k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.333; 10k 4.143, 15k 4.167, 20k 4.151, 25k 4.176, 30k 4.161).
+- kore: snapshot 25k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.521; 10k 4.454, 15k 4.465, 20k 4.466, 25k 4.471, 30k 4.469).
 <!-- /voices-table -->

@@ -3,8 +3,9 @@
 Tiny English text-to-speech. 7.9 MB per voice, about 130x realtime on a single CPU core, text in, 24 kHz
 audio out. Pure Python package with two dependencies (numpy, onnxruntime); runs on Windows, macOS and
 Linux, x64 and arm64. Each voice is distilled from one Kokoro-82M voice: the default, af_heart, scores
-UTMOS 4.43 against the teacher's 4.52 while running 65x faster. Three voices: American female (heart, in
-the package), American male (fenrir) and British female (emma), the last two downloaded on first use.
+UTMOS 4.43 against the teacher's 4.52 while running 65x faster. Five voices: American female (heart, in
+the package), American male (fenrir), British female (emma), British male (fable) and a second American
+female (kore), the last four downloaded on first use.
 
 hibari is Japanese for skylark. Model files, checkpoints and audio samples:
 https://huggingface.co/maureesewilliams/hibari
@@ -26,7 +27,7 @@ echo "Reads standard input too." | hibari -o out.wav
 hibari "Say it out loud." --play                  # winsound / afplay / aplay or paplay
 hibari "Faster, please." --speed 1.25 -o fast.wav
 hibari "Hello there." --phonemes                  # həlˈO ðˈɛɹ.
-hibari "Hello there." --voice emma -o emma.wav    # British English; fenrir = American male
+hibari "Hello there." --voice emma -o emma.wav    # British English; also fenrir, fable, kore
 hibari --list-voices                              # the voices and whether they are downloaded
 hibari --bench                                    # load time, x realtime, G2P time
 ```
@@ -64,6 +65,8 @@ Custom pronunciations inline, misaki style: `tts("Say [hibari](/hibˈɑɹi/) now
 | heart (default) | af_heart | American English, female | in the package |
 | fenrir | am_fenrir | American English, male | downloaded on first use, 7.9 MB |
 | emma | bf_emma | British English, female | downloaded on first use, 7.9 MB |
+| fable | bm_fable | British English, male | downloaded on first use, 7.9 MB |
+| kore | af_kore | American English, female | downloaded on first use, 7.9 MB |
 
 ```python
 tts = Hibari(voice="emma")            # downloads voices/bf_emma.int8.onnx once, then loads from the cache
@@ -89,10 +92,12 @@ training jobs during the voice runs; `scripts/eval_voice.py`):
 | emma | bf_emma (British female) | 4.40 / 2.9% | 4.16 / 2.6% | 0.24 | 139 | 7.94 |
 | fenrir | am_fenrir (American male) | 4.48 / 2.6% | 4.35 / 2.9% | 0.13 | 166 | 7.94 |
 | fable | bm_fable (British male) | 4.33 / 2.6% | 4.17 / 2.6% | 0.16 | 167 | 7.94 |
+| kore | af_kore (American female) | 4.52 / 2.4% | 4.45 / 2.5% | 0.06 | 170 | 7.94 |
 
 - emma: snapshot 40k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.394; 20k 4.107, 30k 4.125, 40k 4.174, 50k 4.174, 60k 4.173).
 - fenrir: snapshot 30k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.496; 10k 4.382, 15k 4.400, 20k 4.397, 25k 4.403, 30k 4.414).
 - fable: snapshot 25k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.333; 10k 4.143, 15k 4.167, 20k 4.151, 25k 4.176, 30k 4.161).
+- kore: snapshot 25k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.521; 10k 4.454, 15k 4.465, 20k 4.466, 25k 4.471, 30k 4.469).
 <!-- /voices-table -->
 
 ## Text to phonemes

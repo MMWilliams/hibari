@@ -18,9 +18,10 @@ tags:
 
 Tiny English text-to-speech. 7.9 MB int8 ONNX models, 6.15 M parameters each, about 130x realtime on a
 single CPU core, 24 kHz audio. Each voice is distilled from one [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)
-voice: the default (af_heart) scores UTMOS 4.43 against the teacher's 4.52 while running 65x faster. Three
-voices: heart (American female, inside the pip package), fenrir (American male) and emma (British female),
-the last two in `voices/` here and downloaded by the package on first use. Comes with its own
+voice: the default (af_heart) scores UTMOS 4.43 against the teacher's 4.52 while running 65x faster. Five
+voices: heart (American female, inside the pip package), fenrir (American male), emma (British female),
+fable (British male) and kore (American female), the last four in `voices/` here and downloaded by the
+package on first use. Comes with its own
 text-to-phoneme front end (no spaCy, no espeak-ng), so plain text goes in and audio comes out.
 
 hibari is Japanese for skylark. Code, Python package and training pipeline:
@@ -35,6 +36,16 @@ numbers, dates, money: <audio controls src="https://huggingface.co/maureesewilli
 question: <audio controls src="https://huggingface.co/maureesewilliams/hibari/resolve/main/samples/question.wav"></audio>
 
 story: <audio controls src="https://huggingface.co/maureesewilliams/hibari/resolve/main/samples/story.wav"></audio>
+
+The other voices introducing themselves (same sentence, synthesized by the package):
+
+fenrir (American male): <audio controls src="https://huggingface.co/maureesewilliams/hibari/resolve/main/samples/fenrir.wav"></audio>
+
+emma (British female): <audio controls src="https://huggingface.co/maureesewilliams/hibari/resolve/main/samples/emma.wav"></audio>
+
+fable (British male): <audio controls src="https://huggingface.co/maureesewilliams/hibari/resolve/main/samples/fable.wav"></audio>
+
+kore (American female): <audio controls src="https://huggingface.co/maureesewilliams/hibari/resolve/main/samples/kore.wav"></audio>
 
 ## Use
 
@@ -67,8 +78,8 @@ or study the model.
 |---|---|
 | onnx/hibari.int8.onnx | shipping model of the heart voice, int8 MatMul weights (7.9 MB) |
 | onnx/hibari.fp32.onnx | same model in fp32 (24.8 MB) |
-| voices/am_fenrir.int8.onnx, voices/bf_emma.int8.onnx | the fenrir and emma voices, same interface (7.9 MB each; the package downloads these, sha256 in its registry) |
-| voices/am_fenrir.fp32.onnx, voices/bf_emma.fp32.onnx | the same in fp32 |
+| voices/am_fenrir.int8.onnx, voices/bf_emma.int8.onnx, voices/bm_fable.int8.onnx, voices/af_kore.int8.onnx | the fenrir, emma, fable and kore voices, same interface (7.9 MB each; the package downloads these, sha256 in its registry) |
+| voices/*.fp32.onnx | the same in fp32 |
 | g2p/ | text-to-phoneme data: misaki lexicons, tagger weights, tokenizer special cases, normalization tables, out-of-vocabulary net (oov.onnx), phoneme vocabulary |
 | checkpoints/decoder_v3_40k.safetensors | PyTorch weights of the decoder (TinyKokoro, kwargs in the file metadata) |
 | checkpoints/prosody_v1.safetensors | PyTorch weights of ProsodyNet (durations, pitch, energy) |
@@ -126,10 +137,12 @@ Per voice (same protocol, 50 unseen sentences each, student fed the teacher's ph
 | emma | bf_emma (British female) | 4.40 / 2.9% | 4.16 / 2.6% | 0.24 | 139 | 7.94 |
 | fenrir | am_fenrir (American male) | 4.48 / 2.6% | 4.35 / 2.9% | 0.13 | 166 | 7.94 |
 | fable | bm_fable (British male) | 4.33 / 2.6% | 4.17 / 2.6% | 0.16 | 167 | 7.94 |
+| kore | af_kore (American female) | 4.52 / 2.4% | 4.45 / 2.5% | 0.06 | 170 | 7.94 |
 
 - emma: snapshot 40k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.394; 20k 4.107, 30k 4.125, 40k 4.174, 50k 4.174, 60k 4.173).
 - fenrir: snapshot 30k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.496; 10k 4.382, 15k 4.400, 20k 4.397, 25k 4.403, 30k 4.414).
 - fable: snapshot 25k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.333; 10k 4.143, 15k 4.167, 20k 4.151, 25k 4.176, 30k 4.161).
+- kore: snapshot 25k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.521; 10k 4.454, 15k 4.465, 20k 4.466, 25k 4.471, 30k 4.469).
 <!-- /voices-table -->
 
 Text to phonemes, against the reference pipeline (misaki 0.9.4 + spaCy + espeak-ng) on 2,500 held-out
@@ -143,8 +156,8 @@ For reading English text aloud on devices without a GPU, where size and latency 
 distillation and small vocoders. Not for voice cloning or impersonation, or for use where listeners aren't
 told the speech is synthetic.
 
-- Three fixed voices (American female and male, British female), English only; no speaker or style input.
-  Speed is adjustable.
+- Five fixed voices (American female x2 and male, British female and male), English only; no speaker or
+  style input. Speed is adjustable.
 - Trained on declarative web prose: questions and exclamations have a narrower pitch range than the teacher.
 - Sentences are synthesized one at a time, with no cross-sentence prosody.
 - Unknown words (about 1 in 5 sentences has one) are read by a small network that gets about 72% of unseen

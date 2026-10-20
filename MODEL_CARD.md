@@ -3,7 +3,8 @@
 hibari (Japanese for skylark) is a family of 6.15 M parameter English text-to-speech models, one per voice.
 Each is a student of one Kokoro-82M voice and runs about 130x realtime on a single CPU core from a 7.9 MB
 int8 ONNX file, with a 24 kHz output. Voices: heart (af_heart, American female, in the package), fenrir
-(am_fenrir, American male) and emma (bf_emma, British female), the last two downloaded on first use.
+(am_fenrir, American male), emma (bf_emma, British female), fable (bm_fable, British male) and kore (af_kore,
+American female), the last four downloaded on first use.
 
 ## Intended use
 
@@ -17,19 +18,24 @@ English, or any use where the listener is not told the speech is synthetic.
 
 ## Voices
 
-Three fixed voices, each its own model with the architecture below (no speaker or style input; speaking
+Five fixed voices, each its own model with the architecture below (no speaker or style input; speaking
 rate is adjustable through the speed input, 1.0 = teacher pace):
 
 | name | Kokoro-82M voice | accent | gender | how it was trained |
 |---|---|---|---|---|
 | heart | af_heart | American | female | 30 k sentences (66 h), from scratch (three stages) |
 | fenrir | am_fenrir | American | male | 15 k sentences, decoder and ProsodyNet fine-tuned from heart's weights |
-| emma | bf_emma | British | female | 15 k sentences, fine-tuned from heart's weights; British G2P |
+| emma | bf_emma | British | female | 30 k sentences, fine-tuned from heart's weights (60 k steps); British G2P |
+| fable | bm_fable | British | male | 15 k sentences, fine-tuned from heart's weights; British G2P |
+| kore | af_kore | American | female | 15 k sentences, fine-tuned from heart's weights |
 
-fenrir was chosen among the Kokoro-82M American male voices by scoring the teacher itself on 20 unseen
-sentences (UTMOS / Whisper-base WER): am_fenrir 4.48 / 1.4%, am_puck 4.47 / 2.5%, am_adam 4.46 / 2.3%,
-am_echo 4.45 / 2.0%, am_liam 4.44 / 1.4%, am_eric 4.41 / 2.5%, am_michael 4.36 / 2.0%, am_onyx 4.36 / 2.0%
-(af_heart 4.52 / 2.0%; bf_emma 4.40 / 2.3%, bf_isabella 4.41 / 2.5%).
+fenrir, fable and kore were chosen by scoring the teacher itself on 20 unseen sentences (UTMOS / Whisper-base
+WER): American male am_fenrir 4.48 / 1.4%, am_puck 4.47 / 2.5%, am_adam 4.46 / 2.3%, am_echo 4.45 / 2.0%,
+am_liam 4.44 / 1.4%, am_eric 4.41 / 2.5%, am_michael 4.36 / 2.0%, am_onyx 4.36 / 2.0%; British male bm_fable
+4.32 / 2.0%, bm_george 4.29 / 2.5%, bm_daniel 4.25 / 2.3%, bm_lewis 4.14 / 1.7%; American female af_kore
+4.51 / 1.4%, af_sarah 4.50 / 2.5%, af_nova 4.50 / 2.0%, af_sky 4.44 / 2.0%, af_aoede 4.43 / 1.7%, af_alloy
+4.41 / 1.7%, af_bella 4.37 / 1.7%, af_nicole 3.14 / 3.7% (af_heart 4.52 / 2.0%; bf_emma 4.40 / 2.3%,
+bf_isabella 4.41 / 2.5%).
 
 ## Model
 
@@ -53,8 +59,8 @@ transformer for out-of-vocabulary words, one per accent) into Kokoro's phoneme a
 ## Training data
 
 All audio was synthesized by Kokoro-82M: 30 k sentences (66 hours) of web text (4 to 35 words each) for
-heart, the first 15 k of the same list for fenrir and emma, with the teacher's durations, F0 and energy
-saved as targets. No human speech recordings were used. The G2P components were trained on misaki + spaCy
+heart, the first 15 k of the same list for fenrir, fable and kore, 30 k (the first 15 k plus 15 k from
+further down the list) for emma, with the teacher's durations, F0 and energy saved as targets. No human speech recordings were used. The G2P components were trained on misaki + spaCy
 + espeak-ng outputs for the text corpus (300 k sentences for the tagger, 418 k words for the American
 out-of-vocabulary net, 383 k for the British one).
 
@@ -79,10 +85,12 @@ thread; the fenrir, emma, fable and kore runs timed while other jobs shared the 
 | emma | bf_emma (British female) | 4.40 / 2.9% | 4.16 / 2.6% | 0.24 | 139 | 7.94 |
 | fenrir | am_fenrir (American male) | 4.48 / 2.6% | 4.35 / 2.9% | 0.13 | 166 | 7.94 |
 | fable | bm_fable (British male) | 4.33 / 2.6% | 4.17 / 2.6% | 0.16 | 167 | 7.94 |
+| kore | af_kore (American female) | 4.52 / 2.4% | 4.45 / 2.5% | 0.06 | 170 | 7.94 |
 
 - emma: snapshot 40k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.394; 20k 4.107, 30k 4.125, 40k 4.174, 50k 4.174, 60k 4.173).
 - fenrir: snapshot 30k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.496; 10k 4.382, 15k 4.400, 20k 4.397, 25k 4.403, 30k 4.414).
 - fable: snapshot 25k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.333; 10k 4.143, 15k 4.167, 20k 4.151, 25k 4.176, 30k 4.161).
+- kore: snapshot 25k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.521; 10k 4.454, 15k 4.465, 20k 4.466, 25k 4.471, 30k 4.469).
 <!-- /voices-table -->
 
 Grapheme-to-phoneme: see README (G2P section) for phoneme error rate and exact match against the
@@ -91,7 +99,7 @@ the same model.
 
 ## Limitations
 
-- Three fixed voices, English only. Non-English words are read with English letter-to-sound rules.
+- Five fixed voices, English only. Non-English words are read with English letter-to-sound rules.
 - Trained on declarative web prose: questions and exclamations are read correctly but with a narrower
   prosodic range than the teacher.
 - Sentences are synthesized one at a time; there is no cross-sentence prosody.

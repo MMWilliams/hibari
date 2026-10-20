@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np, torch, torch.nn.functional as F, torchaudio, soundfile as sf
 from torch.utils.data import Dataset, DataLoader
 
-from tiny_model import TinyKokoro, to_wav, HOP, SR
+from tiny_model import TinyKokoro, to_wav, pulses, HOP, SR, N_FFT
 from styletts2_gan.discriminators import MultiPeriodDiscriminator, MultiResSpecDiscriminator
 from styletts2_gan import losses_styletts2 as L
 from styletts2_gan.losses_styletts2 import GeneratorLoss, DiscriminatorLoss, MultiResolutionSTFTLoss
@@ -127,6 +127,9 @@ def main():
     ap.add_argument("--lin-w", type=float, default=0.0, help="weight of a linear-frequency multi-resolution log-STFT L1 "
                     "(fft 512/1024/2048): resolves individual harmonics where the mel losses average peaks and valleys")
     ap.add_argument("--hi-w", type=float, default=1.0, help="extra weight on bins above 4 kHz inside --lin-w")
+    ap.add_argument("--free-w", type=float, default=0.0, help="penalty on the free-phase branch's energy share in voiced "
+                    "frames below --free-hz (pushes harmonics into the pulse branch, aperiodic energy into the noise branch)")
+    ap.add_argument("--free-hz", type=float, default=4000.0)
     a = ap.parse_args()
 
     dev = "cuda"
@@ -209,11 +212,25 @@ def main():
         # prosody sees the crop with 3x k7 receptive field; edge frames are a small minority
         f0_p, n_p = model.prosody(hf_c)
         l_pro = (f0_p - f0_t).abs().mean() / 100.0 + (n_p - n_t).abs().mean() / 5.0
-        y_hat = to_wav(model.decode(hf_c, f0_t, n_t), f0_t)              # teacher-forced prosody
-        return y, y_hat, l_dur, l_pro
+        parts = model.decode(hf_c, f0_t, n_t)                            # teacher-forced prosody
+        y_hat = to_wav(parts, f0_t)
+        l_free = free_share(parts, f0_t) if a.free_w > 0 else torch.zeros((), device=dev)
+        return y, y_hat, l_dur, l_pro, l_free
+
+    def free_share(parts, f0):
+        """Energy share of the free-phase branch in voiced frames below --free-hz: the diagnosis (docs/VOICE_GAP.md)
+        found it carrying a third of the voiced 1-4 kHz energy with phases that cannot lock to the pulse train."""
+        lh, th, ln, lr, phi = parts
+        Fr = lh.shape[-1]
+        win = torch.hann_window(N_FFT, device=dev)
+        E = torch.stft(pulses(f0), N_FFT, HOP, N_FFT, win, center=True, return_complex=True)[..., :Fr].abs() / (N_FFT / 4)
+        ex = lambda x: torch.exp(2 * x.clamp(max=7.0))
+        ph, pz, pr = ex(lh) * E.pow(2), 2 * ex(ln), ex(lr)
+        sel = ((f0 > 40)[:, None, :] & (torch.arange(lh.shape[1], device=dev)[None, :, None] * SR / N_FFT < a.free_hz)).float()
+        return (pr * sel).sum() / ((ph + pz + pr) * sel).sum().clamp(min=1e-8)
 
     if a.probe:
-        y, y_hat, l_dur, l_pro = run(next(iter(dl)))
+        y, y_hat, l_dur, l_pro, _ = run(next(iter(dl)))
         print(f"[+] probe y {tuple(y.shape)} y_hat {tuple(y_hat.shape)} dur {l_dur.item():.3f} "
               f"pro {l_pro.item():.3f}", flush=True)
         return
@@ -233,7 +250,7 @@ def main():
         for batch in dl:
             if step >= a.steps:
                 break
-            y, y_hat, l_dur, l_pro = run(batch)
+            y, y_hat, l_dur, l_pro, l_free = run(batch)
             gan = step >= a.disc_warmup
 
             if gan:
@@ -258,13 +275,13 @@ def main():
                 l_g = torch.zeros((), device=dev)
             l_lin = lin_loss(y_hat, y) if lin_loss is not None else torch.zeros((), device=dev)
             loss = (a.mel_w * l_mel + a.stft_w * l_stft + a.sil_w * l_sil + a.dur_w * l_dur
-                    + a.pro_w * l_pro + l_g + a.lin_w * l_lin)
+                    + a.pro_w * l_pro + l_g + a.lin_w * l_lin + a.free_w * l_free)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             opt_g.step(); sch_g.step(); sch_d.step()
             step += 1
 
-            for k, v in (("mel", l_mel), ("stft", l_stft), ("lin", l_lin), ("sil", l_sil), ("dur", l_dur),
+            for k, v in (("mel", l_mel), ("stft", l_stft), ("lin", l_lin), ("free", l_free), ("sil", l_sil), ("dur", l_dur),
                          ("pro", l_pro), ("gen", l_g), ("disc", d_l)):
                 acc[k] = acc.get(k, 0.0) + v.detach()                   # no per-step GPU sync
             if step % 100 == 0:

@@ -101,3 +101,14 @@ the new voices. Levers that act on exactly this region: a linear-frequency spect
 filtering, more data or steps) are not expected to help, and the last two were already tried for emma.
 
 Results of the lever experiments: see the end of this file.
+
+## Lever experiments (emma, 15 k-sentence dump, 10 k of a 30 k-step schedule from heart's weights, same held-out rows)
+
+| run | UTMOS teacher-forced | UTMOS with ProsodyNet | MCD dB |
+|---|---|---|---|
+| shipped recipe, 10 k steps (runs/voices/bf_emma_v1) | 4.174 | 4.134 | 9.54 |
+| shipped recipe, 15 k steps | 4.175 | 4.185 | 9.47 |
+| lever 1: linear-frequency log-STFT L1, weight 20, bins above 4 kHz at 0.25 (--lin-w 20 --hi-w 0.25), 10 k | 4.184 | 4.170 | 9.34 |
+
+Lever 1 improves the second metric (MCD 9.54 to 9.34 dB) and UTMOS by 0.01 to 0.04, which is within the noise of 50
+rows and far from the 0.22 gap. Kept as a candidate for the full run only if nothing better turns up.

@@ -10,8 +10,12 @@ Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.
   voiced frames below 4 kHz for every voice; fricatives, silence, transitions, high band are fine. Mel LSD / MCD / harmonic
   amplitude / periodicity / HNR do not separate the weak voices from heart. The noise branch is dead (0 %); the free branch
   carries unvoiced sounds and 23-38 % of voiced 1-4 kHz energy with structured phases (random phases cost 0.1-0.6 UTMOS).
-- [ ] Lever 1 (running): linear-frequency log-STFT L1 (train_tiny.py --lin-w 20 --hi-w 0.25), emma 10k of 30k steps,
-      runs/exp/emma_lin20; compare with runs/voices/bf_emma_v1 10k on the same held-out rows (runs/exp/gap).
+- Lever 1 done: linear-frequency log-STFT L1 (--lin-w 20 --hi-w 0.25), emma 10k of 30k: teacher-forced 4.184 vs 4.174,
+  pnet 4.170 vs 4.134, MCD 9.34 vs 9.54 (runs/exp/emma_lin20, scores in runs/exp/gap/results.json): small, within noise.
+- [ ] Lever 2 (running 06:52-07:13): free-branch share penalty (--free-w 10, voiced < 4 kHz), runs/exp/emma_free10.
+- Second metric for the report: scripts/mcd_eval.py (DTW MCD on the 50 unseen sentences): heart 12.44, kore 10.54,
+  fenrir 10.97, fable 13.04, emma 11.01 (v1 11.39, v3s 10.72): MCD does not track UTMOS. logs/voices/cand.sh resumes a
+  candidate to 30k and runs post_voice.py --no-stage.
 - [ ] If it helps: finish 30k (--resume), post_voice.py --run ... --no-stage, A/B wavs to runs/voices/<voice>_v2/, then
       fenrir and fable; stage in hf_stage/voices_v2 with new file names, registry entries, 0.2.1 prepared, not released.
 - [ ] If not: lever 2 = fresh discriminators (no --init-disc), then re-diagnose.

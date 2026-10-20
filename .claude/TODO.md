@@ -16,7 +16,9 @@ Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.
   held-out rows; teacher-forced 4.18-4.21, so the decoder, not prosody, is the gap); ProsodyNet pitch err 0.22 st.
   fenrir: done 01:18 (decoder resumed at 12k after a CUDA OOM caused by dumps sharing GPU 0): snapshot 30k; 50 unseen
   sentences: int8 UTMOS 4.35 vs teacher 4.48, WER 2.9% vs 2.6%, 166x realtime; staged + registered.
-  emma v2 (GPU 1): 29.8k rows, 60k steps from 15k.pt, started 00:54 (7.1 it/s). bm_fable dump 01:19 on GPU 0, then af_kore.
+  emma v2 (GPU 1): 29.8k rows, 60k steps from 15k.pt, started 00:54, done ~03:17 then post (no-stage) -> compare.
+  fable (bm_fable): done 02:54, snapshot 25k, staged + registered (numbers in runs/voices/bm_fable/summary.json).
+  kore (af_kore): training on GPU 0 from 02:56 (logs/voices/gpu0b.sh), expected done ~04:20.
 - [ ] Listen to runs/voices/*/ab*.wav and demo*.wav; then upload hf_stage/voices/ to HF (voices/ folder), re-upload
       hf/README.md, bump + publish 0.2.0 (gh workflow run publish.yml -f publish=true), GitHub release.
 - Overnight 2026-10-20 00:25 (user via tts-fast session; logs/fable_task5.md): limits lifted, both GPUs, keep ~6 GB RAM

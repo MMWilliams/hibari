@@ -31,5 +31,16 @@
   "bytes": 7936868,
   "sha256": "6614ce51337d8777d1115ebc01df4df82ffbaad91869e752bbbd0d50502240f3",
   "british": false
+ },
+ "fable": {
+  "kokoro": "bm_fable",
+  "language": "en-GB",
+  "accent": "British",
+  "gender": "male",
+  "file": "bm_fable.int8.onnx",
+  "bundled": false,
+  "bytes": 7936868,
+  "sha256": "c28529302f2d27cd12f62625c24425888c4e3c2675583100ec530259136b8bc6",
+  "british": true
  }
 }

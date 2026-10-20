@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hibari-tts"
-version = "0.1.0"
-description = "Tiny American English text-to-speech: 7.9 MB model, about 130x realtime on one CPU core, text in, 24 kHz audio out"
+version = "0.2.0"
+description = "Tiny English text-to-speech: 7.9 MB per voice (American and British), about 130x realtime on one CPU core, text in, 24 kHz audio out"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.9"

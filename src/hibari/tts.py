@@ -1,7 +1,8 @@
 """hibari: text to speech.
 
     from hibari import Hibari
-    tts = Hibari()
+    tts = Hibari()                       # voice "heart" (American English, female), in the package
+    tts = Hibari(voice="emma")           # British English; other voices download once (see hibari.voices)
     audio = tts("Hello there.")          # float32 numpy array, 24 kHz
     tts.save("Hello there.", "hello.wav")
     for chunk in tts.stream(long_text): ...   # one array per sentence, as soon as each is ready
@@ -10,6 +11,7 @@ import json, os, re, time, wave
 import numpy as np
 
 from . import dsp
+from .voices import VOICES, DEFAULT, voice_path
 
 ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 SAMPLE_RATE = dsp.SR
@@ -33,17 +35,22 @@ def _ends_sentence(para, end, nxt):
 class Hibari:
     """Loads the ONNX model and the G2P once; call the instance to synthesize.
 
+    voice: a name from hibari.voices.VOICES ("heart" is in the package; others are downloaded on first use
+    into the cache directory, HIBARI_HOME or the OS user cache). The voice picks the G2P variant
+    (British spelling-to-sound rules for British voices).
     threads: onnxruntime intra-op threads (1 is enough; the model runs ~130x realtime on one core).
-    model: path to another ONNX file with the same inputs/outputs (e.g. the fp32 export).
+    model: path to another ONNX file with the same inputs/outputs (e.g. the fp32 export) instead of the
+    voice's own file.
     """
     sample_rate = SAMPLE_RATE
 
-    def __init__(self, model=None, threads=1, g2p=None):
+    def __init__(self, voice=DEFAULT, model=None, threads=1, g2p=None):
         import onnxruntime as ort
         so = ort.SessionOptions()
         so.intra_op_num_threads = so.inter_op_num_threads = threads
         so.log_severity_level = 3
-        self.model_path = model or os.path.join(ASSETS, "hibari.onnx")
+        self.voice = voice
+        self.model_path = model or voice_path(voice)
         self.sess = ort.InferenceSession(self.model_path, so, providers=["CPUExecutionProvider"])
         with open(os.path.join(ASSETS, "vocab.json"), encoding="utf-8") as f:
             self.vocab = json.load(f)
@@ -53,7 +60,7 @@ class Hibari:
     def g2p(self):
         if self._g2p is None:
             from .g2p import G2P
-            self._g2p = G2P()
+            self._g2p = G2P(british=VOICES[self.voice]["british"])
         return self._g2p
 
     # -- text -------------------------------------------------------------------------------

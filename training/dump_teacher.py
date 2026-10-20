@@ -19,6 +19,7 @@ ap.add_argument("--n", type=int, default=60000)
 ap.add_argument("--shard", type=int, default=0)
 ap.add_argument("--nshards", type=int, default=1)
 ap.add_argument("--voice", default="af_heart")
+ap.add_argument("--lang", help="KPipeline language code (default: the voice's first letter, a/b)")
 ap.add_argument("--out", default="data/dist")
 a = ap.parse_args()
 
@@ -32,7 +33,7 @@ binp, f0p, idxp = (out / f"shard{a.shard}{ext}" for ext in (".i16.bin", ".f0n.f1
 seen = {json.loads(l)["sid"] for l in open(idxp, encoding="utf-8")} if idxp.exists() else set()
 
 model = KModel(repo_id="hexgrad/Kokoro-82M").eval().cuda()
-pipe = KPipeline(lang_code="a", repo_id="hexgrad/Kokoro-82M", model=model)
+pipe = KPipeline(lang_code=a.lang or a.voice[0], repo_id="hexgrad/Kokoro-82M", model=model)
 vocab = model.vocab
 cap = {}
 _f0n = model.predictor.F0Ntrain

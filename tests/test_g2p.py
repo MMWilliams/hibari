@@ -10,6 +10,11 @@ def g2p():
     return G2P()
 
 
+@pytest.fixture(scope="module")
+def g2p_gb():
+    return G2P(british=True)
+
+
 def test_numbers():
     assert N.cardinal(1234) == "one thousand, two hundred and thirty-four"
     assert N.cardinal(1001) == "one thousand and one"
@@ -71,3 +76,22 @@ def test_oov_and_custom_phonemes(g2p):
 def test_empty_and_punctuation(g2p):
     assert g2p("") == ""
     assert g2p("...") == "..."
+
+
+@pytest.mark.parametrize("text, expected", [          # expected = misaki british=True reference output
+    ("Hello there.", "həlˈQ ðˈɛː."),
+    ("The apple and the pear.", "ði ˈapᵊl and ðə pˈɛː."),
+    ("He used to run; she washes the dishes and faded fast.", "hˌiː jˈuːst tə ɹˈʌn; ʃiː wˈɒʃɪz ðə dˈɪʃɪz and fˈAdɪd fˈɑːst."),
+    ("Please read it now; he read it yesterday.", "plˈiːz ɹˈiːd ɪt nˈW; hiː ɹˈɛd ɪt jˈɛstədA."),
+    ("It costs £5.50 and $3.", "ˌɪt kˈɒsts fˈIv pˈWndz and fˈɪfti pˈɛns and θɹˈiː dˈɒləz."),
+    ("A car, a bar, better water.", "ɐ kˈɑː, ɐ bˈɑː, bˈɛtə wˈɔːtə."),
+    ("They were staring and starring.", "ðˌA wɜː stˈɛːɹɪŋ and stˈɑːɹɪŋ."),
+])
+def test_british_phonemes(g2p_gb, text, expected):
+    assert g2p_gb(text) == expected
+
+
+def test_british_differs_from_american(g2p, g2p_gb):
+    assert g2p("Better water.") == "bˈɛTəɹ wˈɔTəɹ." and g2p_gb("Better water.") == "bˈɛtə wˈɔːtə."
+    ps = g2p_gb("Blorptastic!")                                      # British OOV net: non-rhotic, long vowels
+    assert ps.endswith("!") and len(ps) > 5 and "ɹ" not in ps.split("ˈ")[0]

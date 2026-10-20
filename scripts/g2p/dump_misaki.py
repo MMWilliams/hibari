@@ -11,6 +11,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--start", type=int, required=True); ap.add_argument("--end", type=int, required=True)
 ap.add_argument("--shard", type=int, default=0); ap.add_argument("--nshards", type=int, default=1)
 ap.add_argument("--out", required=True)
+ap.add_argument("--british", action="store_true", help="misaki british=True + espeak en-gb (for the British G2P port)")
 a = ap.parse_args()
 
 lines = [l.strip() for l in gzip.open(os.path.join(ROOT, "data/sentences.txt.gz"), "rt", encoding="utf-8")]
@@ -19,14 +20,14 @@ random.Random(0).shuffle(lines)
 lines = lines[a.start:a.end][a.shard::a.nshards]
 
 from misaki import en, espeak
-fb = espeak.EspeakFallback(british=False)
+fb = espeak.EspeakFallback(british=a.british)
 rec = {}
 class Fallback:
     def __call__(self, token):
         ps, r = fb(token)
         rec.setdefault("oov", []).append([token.text, ps])
         return ps, r
-g2p = en.G2P(trf=False, british=False, fallback=Fallback(), unk="")
+g2p = en.G2P(trf=False, british=a.british, fallback=Fallback(), unk="")
 orig = g2p.tokenize
 def tokenize(text, tokens, features):
     mt = orig(text, tokens, features)

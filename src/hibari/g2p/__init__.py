@@ -1,7 +1,8 @@
-"""Text -> misaki-style American English phonemes, without spaCy or espeak-ng.
+"""Text -> misaki-style English phonemes, without spaCy or espeak-ng.
 
     g2p = G2P()
     g2p("Hello there.")      -> 'həlˈO ðˈɛɹ.'
+    G2P(british=True)("Hello there.")  -> 'həlˈQ ðˈɛː.'   (misaki's British lexicon and rules)
 
 Pipeline (misaki 0.9.4 en.py, ported): normalize -> tokenize (spaCy rules) -> tag (perceptron)
 -> lexicon with part-of-speech and context rules -> OOV net for unknown words -> stress resolution.
@@ -47,20 +48,24 @@ class Context:
 
 
 class G2P:
-    def __init__(self, oov=None, unk=""):
+    def __init__(self, oov=None, unk="", british=False):
         """oov: callable word -> phonemes for words the lexicon can't read (default: the bundled
-        OOV net, loaded lazily); pass False to skip unknown words."""
-        self.lexicon = Lexicon(_load_json("lexicon_us_gold.json.gz"), _load_json("lexicon_us_silver.json.gz"))
+        OOV net, loaded lazily); pass False to skip unknown words. british: misaki's British
+        lexicon and suffix rules and the British OOV net (en-gb readings)."""
+        acc = "gb" if british else "us"
+        self.lexicon = Lexicon(_load_json(f"lexicon_{acc}_gold.json.gz"), _load_json(f"lexicon_{acc}_silver.json.gz"),
+                               british)
         self.tokenizer = Tokenizer(_load_json("tokenizer_exceptions.json"))
         self.tagger = Tagger(_load_json("tagger.json.gz"))
         self._oov = oov
         self.unk = unk
+        self.british = british
 
     @property
     def oov(self):
         if self._oov is None:
             from .oov import OOV
-            self._oov = OOV()
+            self._oov = OOV(os.path.join(ASSETS, "oov_gb.onnx" if self.british else "oov.onnx"))
         return self._oov
 
     # -- tokens -------------------------------------------------------------------------------

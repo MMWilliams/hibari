@@ -85,6 +85,7 @@ def main():
     ap.add_argument("--lr", type=float, default=5e-4)
     ap.add_argument("--model", default="{}", help="ProsodyNet kwargs as JSON")
     ap.add_argument("--baseline", help="TinyKokoro checkpoint to score with the same metrics first")
+    ap.add_argument("--init", help="start from this ProsodyNet checkpoint (fine-tuning to another voice)")
     a = ap.parse_args()
     dev = "cuda"
     torch.manual_seed(0)
@@ -105,6 +106,9 @@ def main():
 
     kw = json.loads(a.model)
     model = ProsodyNet(**kw).to(dev)
+    if a.init:
+        model.load_state_dict(torch.load(a.init, map_location="cpu", weights_only=False)["model"])
+        print(f"[*] init from {a.init}", flush=True)
     print(f"[*] ProsodyNet {sum(p.numel() for p in model.parameters())/1e6:.3f}M", flush=True)
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, betas=(0.9, 0.98), weight_decay=1e-2)
     sch = torch.optim.lr_scheduler.OneCycleLR(opt, a.lr, total_steps=a.steps, pct_start=0.05)

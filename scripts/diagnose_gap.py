@@ -18,6 +18,7 @@ ap.add_argument("snaps", nargs="+")
 ap.add_argument("--run", default="runs/tiny_v1")
 ap.add_argument("--n", type=int, default=50)
 ap.add_argument("--prosody")
+ap.add_argument("--index", default="data/dist/shard*.jsonl", help="the run's training index (its held-out split is used)")
 a = ap.parse_args()
 pn = None
 if a.prosody:
@@ -26,7 +27,7 @@ if a.prosody:
 out = f"{a.run}/diag"; os.makedirs(out, exist_ok=True)
 
 # the trainer's held-out split
-rows = [json.loads(l) for f in sorted(glob.glob("data/dist/shard*.jsonl")) for l in open(f, encoding="utf-8")]
+rows = [json.loads(l) for f in sorted(glob.glob(a.index)) for l in open(f, encoding="utf-8")]
 rows = [r for r in rows if sum(r["dur"]) >= 66 and len(r["ids"]) <= 510]
 random.Random(1234).shuffle(rows)
 rows = rows[-200:][: a.n]

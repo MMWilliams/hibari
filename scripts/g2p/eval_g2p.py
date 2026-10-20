@@ -2,6 +2,7 @@
 over reference length) and sentence exact match on dump_misaki.py output, plus timing.
 
     python scripts/g2p/eval_g2p.py g2p_work/eval.jsonl [--no-normalize] [--show 20]
+    python scripts/g2p/eval_g2p.py g2p_work/eval_gb.jsonl --british
 """
 import argparse, collections, json, os, sys, time
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -11,11 +12,12 @@ ap = argparse.ArgumentParser()
 ap.add_argument("path", nargs="?", default="g2p_work/eval.jsonl")
 ap.add_argument("--no-normalize", action="store_true")
 ap.add_argument("--show", type=int, default=12)
+ap.add_argument("--british", action="store_true", help="G2P(british=True) against a dump_misaki.py --british set")
 a = ap.parse_args()
 
 t0 = time.perf_counter()
 from hibari.g2p import G2P  # noqa: E402
-g2p = G2P()
+g2p = G2P(british=a.british)
 g2p.oov  # load the OOV net too
 load_ms = (time.perf_counter() - t0) * 1000
 

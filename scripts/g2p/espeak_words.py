@@ -9,8 +9,9 @@ from misaki.token import MToken
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--words", required=True); ap.add_argument("--out", required=True)
+ap.add_argument("--british", action="store_true")
 a = ap.parse_args()
-fb = espeak.EspeakFallback(british=False)
+fb = espeak.EspeakFallback(british=a.british)
 words = [w.rstrip("\n") for w in open(a.words, encoding="utf-8") if w.strip()]
 with open(a.out, "w", encoding="utf-8") as f:
     for i, w in enumerate(words):

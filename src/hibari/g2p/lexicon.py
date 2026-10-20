@@ -1,6 +1,8 @@
-"""misaki's American-English lexicon logic (misaki 0.9.4, Apache-2.0, hexgrad), ported so hibari
-reads text the way Kokoro-82M was trained to hear it. Dictionary files: misaki's us_gold / us_silver.
-Numbers go through numbers.py instead of num2words; everything else follows misaki en.py."""
+"""misaki's English lexicon logic (misaki 0.9.4, Apache-2.0, hexgrad), ported so hibari reads text the
+way Kokoro-82M was trained to hear it. Dictionary files: misaki's us_gold / us_silver, or gb_gold /
+gb_silver with british=True (which also switches the three suffix rules that differ: no flapped t,
+and ɪ instead of ᵻ in -es / -ed). Numbers go through numbers.py instead of num2words; everything else
+follows misaki en.py."""
 import re, unicodedata
 from . import numbers as N
 
@@ -91,8 +93,9 @@ class Dict:
 
 
 class Lexicon:
-    def __init__(self, gold, silver):
+    def __init__(self, gold, silver, british=False):
         self.golds, self.silvers = Dict(gold), Dict(silver)
+        self.british = british
         self.cap_stresses = (0.5, 2)
 
     def get_NNP(self, word):
@@ -178,7 +181,7 @@ class Lexicon:
         elif stem[-1] in "ptkfθ":
             return stem + "s"
         elif stem[-1] in "szʃʒʧʤ":
-            return stem + "ᵻz"
+            return stem + ("ɪ" if self.british else "ᵻ") + "z"
         return stem + "z"
 
     def stem_s(self, word, tag, stress, ctx):
@@ -201,10 +204,10 @@ class Lexicon:
         elif stem[-1] in "pkfθʃsʧ":
             return stem + "t"
         elif stem[-1] == "d":
-            return stem + "ᵻd"
+            return stem + ("ɪ" if self.british else "ᵻ") + "d"
         elif stem[-1] != "t":
             return stem + "d"
-        elif len(stem) < 2:
+        elif self.british or len(stem) < 2:
             return stem + "ɪd"
         elif stem[-2] in US_TAUS:
             return stem[:-1] + "ɾᵻd"
@@ -225,6 +228,9 @@ class Lexicon:
     def _ing(self, stem):
         if not stem:
             return None
+        elif self.british:
+            if stem[-1] in "əː":
+                return None
         elif len(stem) > 1 and stem[-1] == "t" and stem[-2] in US_TAUS:
             return stem[:-1] + "ɾɪŋ"
         return stem + "ɪŋ"

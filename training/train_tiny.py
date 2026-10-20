@@ -95,6 +95,8 @@ def main():
     ap.add_argument("--resume", action="store_true")
     ap.add_argument("--probe", action="store_true")
     ap.add_argument("--init", help="copy same-shape weights from this checkpoint (e.g. a narrower run's text side)")
+    ap.add_argument("--init-disc", help="load the discriminators from this last.pt too and skip --disc-warmup "
+                    "(fine-tuning a trained decoder to another voice)")
     a = ap.parse_args()
 
     dev = "cuda"
@@ -142,6 +144,11 @@ def main():
         keep = {k: v for k, v in src.items() if k in own and own[k].shape == v.shape}
         model.load_state_dict(keep, strict=False)
         print(f"[*] init {len(keep)}/{len(own)} tensors from {a.init}", flush=True)
+    if a.init_disc and not (a.resume and ck.exists()):
+        c = torch.load(a.init_disc, map_location="cpu", weights_only=False)
+        mpd.load_state_dict(c["mpd"]); msd.load_state_dict(c["msd"])
+        a.disc_warmup = 0
+        print(f"[*] discriminators from {a.init_disc} (step {c['step']}), no warmup", flush=True)
 
     dl = DataLoader(Dist(train_rows), batch_size=a.batch, shuffle=True, collate_fn=collate,
                     num_workers=4, drop_last=True, pin_memory=True, persistent_workers=True)

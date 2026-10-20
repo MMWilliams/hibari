@@ -1,4 +1,24 @@
 {
-  "heart": {"kokoro": "af_heart", "language": "en-US", "accent": "American", "gender": "female", "file": "hibari.onnx", "bundled": true,
-            "bytes": 7936868, "sha256": "", "british": false}
+ "heart": {
+  "kokoro": "af_heart",
+  "language": "en-US",
+  "accent": "American",
+  "gender": "female",
+  "file": "hibari.onnx",
+  "bundled": true,
+  "bytes": 7936868,
+  "sha256": "5f70741d4e900f4e85d0037498736cc1b3e1b9a63a13546a5da1e63abf4fccd8",
+  "british": false
+ },
+ "emma": {
+  "kokoro": "bf_emma",
+  "language": "en-GB",
+  "accent": "British",
+  "gender": "female",
+  "file": "bf_emma.int8.onnx",
+  "bundled": false,
+  "bytes": 7936868,
+  "sha256": "d3216db816697b0e10a8d239a97767f5483fa5b68d9edb6774836cfed641a69f",
+  "british": true
+ }
 }

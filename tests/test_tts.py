@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from hibari import Hibari, SAMPLE_RATE
+from hibari.voices import VOICES, cache_dir
 
 
 @pytest.fixture(scope="module")
@@ -68,3 +69,15 @@ def test_cli(tmp_path):
     r = subprocess.run([sys.executable, "-m", "hibari.cli", "-o", str(out)], input="From stdin.", capture_output=True,
                        text=True)
     assert r.returncode == 0, r.stderr
+
+
+@pytest.mark.parametrize("name", [n for n, v in VOICES.items() if not v["bundled"]])
+def test_other_voices_when_cached(name):
+    """Runs only where the voice file is already in the cache (HIBARI_HOME); no download in tests."""
+    if not os.path.exists(os.path.join(cache_dir(), VOICES[name]["file"])):
+        pytest.skip(f"{name} not cached")
+    tts = Hibari(voice=name)
+    y = tts("Hello there, this is a test.", seed=0)
+    assert 1.0 < len(y) / SAMPLE_RATE < 4.0 and 0.05 < np.abs(y).max() <= 1.0
+    ps = tts.phonemize("Better water.")[0]
+    assert ps == ("bˈɛtə wˈɔːtə." if VOICES[name]["british"] else "bˈɛTəɹ wˈɔTəɹ.")

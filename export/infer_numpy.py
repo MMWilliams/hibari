@@ -123,11 +123,15 @@ class Tiny:
         so = ort.SessionOptions()
         so.intra_op_num_threads = so.inter_op_num_threads = threads
         self.sess = ort.InferenceSession(model, so, providers=["CPUExecutionProvider"])
+        self.inputs = {i.name for i in self.sess.get_inputs()}            # exports since 2026-10-19 take a speed input
         vp = os.path.join(os.path.dirname(model), "vocab.json")
         self.vocab = json.load(open(vp, encoding="utf-8")) if os.path.exists(vp) else None
 
-    def spec(self, ids):                                                  # spectrum parts (+ f0 for src)
-        return [o[0] for o in self.sess.run(None, {"ids": np.asarray([ids], np.int64)})]
+    def spec(self, ids, speed=1.0):                                       # spectrum parts (+ f0 for src)
+        feed = {"ids": np.asarray([ids], np.int64)}
+        if "speed" in self.inputs:
+            feed["speed"] = np.asarray([speed], np.float32)
+        return [o[0] for o in self.sess.run(None, feed)]
 
     def __call__(self, ids):
         return wav(self.spec(ids))

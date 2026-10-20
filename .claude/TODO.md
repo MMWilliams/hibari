@@ -18,12 +18,14 @@ Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.
   sentences: int8 UTMOS 4.35 vs teacher 4.48, WER 2.9% vs 2.6%, 166x realtime; staged + registered.
   emma v2 (GPU 1, 29.8k rows, 60k steps from 15k.pt): snapshot 40k; 50 unseen: int8 4.16 / 2.6% vs v1 4.14 / 2.7% ->
   kept (runs/voices/bf_emma = v2, bf_emma_v1 = first run; export/bf_emma = v2). emma v3s experiment on GPU 1 from 03:27:
-  heart's third stage redone on emma data (init runs/tiny_v2/snap/60k.pt, 60k steps, lr 2e-4); cut if not evaluated by 06:00.
+  heart's third stage redone on emma data (init runs/tiny_v2/snap/60k.pt, 60k steps): 60k snapshot int8 4.09 / 2.5% -> lost to v2.
   fable (bm_fable): done 02:54, snapshot 25k, staged + registered (numbers in runs/voices/bm_fable/summary.json).
   kore (af_kore): done 04:09, snapshot 25k; 50 unseen: int8 4.46 / 2.5% vs teacher 4.52 / 2.4%, 170x; staged + registered.
   fable (bm_fable): int8 4.17 / 2.6% vs teacher 4.33 / 2.6%, 167x. All four pass the gate (WER within 0.5, parity, demos).
-- [ ] Listen to runs/voices/*/ab*.wav and demo*.wav; then upload hf_stage/voices/ to HF (voices/ folder), re-upload
-      hf/README.md, bump + publish 0.2.0 (gh workflow run publish.yml -f publish=true), GitHub release.
+- Publish status 2026-10-20 05:25: HF voices/ + samples/ + README uploaded and verified by anonymous download (sha256 OK);
+  10 commits pushed to GitHub, CI green on all 6 jobs; tests 57 pass, wheel test pass. 05:40: publish workflow
+  dispatched (gh workflow run publish.yml -f publish=true), then PyPI check, GitHub release v0.2.0, scripts/check_release.sh.
+- [ ] User: listen to runs/voices/*/ab*.wav and demo*.wav in the morning and give feedback.
 - Overnight 2026-10-20 00:25 (user via tts-fast session; logs/fable_task5.md): limits lifted, both GPUs, keep ~6 GB RAM
   free, and PUBLISH 0.2.0 on the user's behalf once validated (tests, wheel test, HF upload + sha check, push, CI,
   PyPI, GitHub release, fresh-venv install check). Plan: GPU 0 fenrir -> bm_fable (teacher 4.32/2.0%) -> af_kore

@@ -7,3 +7,8 @@ configs/empty.pth
 __pycache__/
 export/*.onnx
 .claude/activity.json
+g2p_work/
+build/
+dist/
+*.egg-info/
+src/hibari/assets/*.pt

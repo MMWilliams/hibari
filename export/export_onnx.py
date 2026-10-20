@@ -1,5 +1,5 @@
-"""Export TinyKokoro to ONNX: ids [1,L] -> logmag, phase [1,601,F] (src models: lh, theta, ln, lr,
-phi [1,601,F] and f0 [1,F]). Durations and the token->frame expansion are inside the graph; the pulse
+"""Export TinyKokoro to ONNX: ids [1,L], speed [1] -> logmag, phase [1,601,F] (src models: lh, theta, ln, lr,
+phi [1,601,F] and f0 [1,F]). speed divides the predicted durations (1.0 = as trained). Durations and the token->frame expansion are inside the graph; the pulse
 source, noise and iSTFT are left to the runtime (numpy in infer_numpy.py).
 --prosody <ckpt> puts a ProsodyNet in the graph: it gives the durations and F0/energy, TinyKokoro
 gives the text features and the decoder (its own duration/prosody heads are left out).
@@ -43,13 +43,13 @@ class Export(nn.Module):
             x = attn_layer(te.attn, x, te.attn.self_attn.num_heads)
         return te.norm(x).transpose(1, 2)                         # [1,C,L]
 
-    def forward(self, ids):                                       # [1,L] int64
+    def forward(self, ids, speed):                                # ids [1,L] int64, speed [1] float32
         m, pn = self.m, self.pn
         h = self.encode(m.text, ids)                              # decoder's text features
         side = pn if pn is not None else m                        # durations and F0/energy come from here
         hp = self.encode(pn.text, ids) if pn is not None else h
         logd = side.dur(hp)[0, 0]                                 # [L]
-        dur = torch.round(torch.exp(logd) - 1.0).clamp(min=1).long()
+        dur = torch.round((torch.exp(logd) - 1.0) / speed).clamp(min=1).long()   # speed 1 = teacher pace
         cum = torch.cumsum(dur, 0)                                # frame f belongs to the first token with cum > f
         frames = torch.arange(dur.sum(), device=ids.device)         # cum[-1] mis-exports
         tok = (frames[:, None] >= cum[None, :]).sum(1)            # [F]
@@ -106,15 +106,16 @@ def main():
         pn.load_state_dict(cp["model"])
     ex = Export(model, pn).eval()
     ids = torch.tensor([[0, 50, 83, 54, 156, 57, 135, 0]])
+    speed = torch.ones(1)
     with torch.no_grad():
-        ref = ex(ids)
+        ref = ex(ids, speed)
         parts, f0 = infer_pnet(model, pn, ids) if pn else model.infer(ids)
         for r, t in zip(ref, (*parts, f0)):
             assert torch.allclose(t, r, atol=1e-4), (t - r).abs().max()
     names = ["lh", "theta", "ln", "lr", "phi"] if model.src else ["logmag", "phase"]
     axes = {"ids": {1: "L"}, **{k: {2: "F"} for k in names}, **({"f0": {1: "F"}} if model.src else {})}
     os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
-    torch.onnx.export(ex, (ids,), a.out, dynamo=False, opset_version=17, do_constant_folding=False, input_names=["ids"],
+    torch.onnx.export(ex, (ids, speed), a.out, dynamo=False, opset_version=17, do_constant_folding=False, input_names=["ids", "speed"],
                       output_names=names + (["f0"] if model.src else []), dynamic_axes=axes)
     onnx.checker.check_model(a.out)
     fold_weight_transposes(a.out)
@@ -131,7 +132,7 @@ def main():
     import onnxruntime as ort
     for p in (a.out, q):
         s = ort.InferenceSession(p, providers=["CPUExecutionProvider"])
-        outs = s.run(None, {"ids": ids.numpy()})
+        outs = s.run(None, {"ids": ids.numpy(), "speed": speed.numpy()})
         mb = os.path.getsize(p) / 1e6
         if outs[0].shape == ref[0].shape:
             err = max(np.abs(o - r.numpy()).max() for o, r in zip(outs, ref))

@@ -1,0 +1,35 @@
+hibari
+Copyright 2026 Maureese Williams
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes software and data developed by third parties:
+
+Kokoro-82M (https://huggingface.co/hexgrad/Kokoro-82M), by hexgrad, Apache-2.0.
+  hibari's acoustic model was distilled from Kokoro-82M (voice af_heart): its training audio,
+  durations, pitch and energy targets were synthesized by Kokoro-82M. The phoneme vocabulary
+  (assets/vocab.json) is Kokoro's.
+
+misaki (https://github.com/hexgrad/misaki), by hexgrad, Apache-2.0.
+  assets/lexicon_us_gold.json.gz and assets/lexicon_us_silver.json.gz are misaki 0.9.4's
+  us_gold.json and us_silver.json, unchanged apart from compression. hibari/g2p/lexicon.py and
+  hibari/g2p/__init__.py port misaki's English G2P rules (en.py) to run without spaCy.
+
+spaCy (https://github.com/explosion/spaCy), by ExplosionAI GmbH, MIT.
+  assets/tokenizer_exceptions.json is spaCy 3.8's English tokenizer special-case table;
+  hibari/g2p/tokenize.py follows spaCy's prefix/suffix/infix tokenization rules. The tagger
+  (assets/tagger.json.gz) was trained on tags produced by spaCy's en_core_web_sm model.
+
+espeak-ng (https://github.com/espeak-ng/espeak-ng), GPL-3.0.
+  Not included. The out-of-vocabulary net (assets/oov.onnx) was trained on pronunciations that
+  espeak-ng produced for a word list, so that unknown words are read the way Kokoro's reference
+  pipeline reads them. No espeak-ng code or data files ship with hibari.
+
+StyleTTS2 (https://github.com/yl4579/StyleTTS2), by Aaron (Yinghao) Li, MIT.
+  styletts2_gan/ in the research repository (discriminators and losses used while training the
+  acoustic model) is adapted from StyleTTS2 and keeps its MIT license text. Not part of the
+  hibari package.
+
+num2words (https://github.com/savoirfairelinux/num2words), LGPL-2.1.
+  Not included. hibari/g2p/numbers.py is an independent implementation of the English number
+  words whose output was checked against num2words for compatibility with misaki.

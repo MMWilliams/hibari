@@ -1,48 +1,64 @@
-# kokoro-tiny TODO
+# kokoro-tiny / hibari TODO
 
-Goal: Kokoro-82M (af_heart) distilled into a single-voice student that is smaller and faster than Paradee-8M and as close to the teacher as possible, for weak Mac/Windows CPUs.
-Student = training/tiny_model.py: TinyKokoro v3 (c_dec 256 x 8 blocks, ff 768, src=True pulse source + noise + free-phase branch, 4.19M) + ProsodyNet (durations, 80 Hz F0/energy, 1.68M, runs/prosody_v1/best.pt).
-Shipping export: export/v3_final (one ONNX graph: ProsodyNet durations/F0/energy, TinyKokoro 40k text features + decoder, its own dur/prosody heads dropped; host DSP = pulses + noise + iSTFT in export/infer_numpy.py).
+Goal: Kokoro-82M (af_heart) distilled into a single-voice student that is smaller and faster than Paradee-8M and as
+close to the teacher as possible, for weak Mac/Windows CPUs. Product name: **hibari** (skylark).
+Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.68M, runs/prosody_v1/best.pt).
+Shipping graph: export/v3_speed (= v3_final + a `speed` input; identical outputs at speed 1.0), copied to
+src/hibari/assets/hibari.onnx (int8, 7.94 MB).
 
-## Result 2026-10-19 (runs/compare_v3, 50 unseen sentences, 1 ORT thread; machine ~70% busy with other sessions, so xRT is low for everyone)
-| model | MB | xRT | UTMOS | WER |
-| teacher Kokoro-82M | | | 4.52 | 2.8% |
-| Paradee int8 | 9.04 | 7.4 (14 best-of-4 re-run; 22-24 on a quiet machine) | 4.41 | 2.8% |
-| v3 40k + ProsodyNet int8 | 7.94 | 62 (134 best-of-4) | 4.43 | 2.7% |
-| v3 40k + ProsodyNet fp32 | 24.75 | 46 (99 best-of-4) | 4.43 | 2.7% |
-A/B wavs: runs/compare_v3/ab{0,1,2}_teacher_paradee_tiny.wav. Snapshot pick by pnet UTMOS (runs/tiny_v3/diag/results.json): 30k 4.404, 40k 4.437, 50k 4.431, 60k 4.430; teacher 4.529.
+## Phase 1 done 2026-10-19 (package + G2P + docs)
+- `hibari` package (pyproject.toml, src/hibari): numpy + onnxruntime only (scipy optional), py3-none-any wheel
+  11.8 MB (dist/, rebuild with `python -m build --wheel`), API Hibari()/save/stream/phonemize/from_phonemes/speed/seed, CLI (`hibari`, --play/--phonemes/--bench),
+  tests/ (39 pass). Verified: fresh venv on Windows (py 3.11) and WSL Ubuntu-22.04 (py 3.10) via scripts/test_wheel.sh.
+- G2P without spaCy/espeak (src/hibari/g2p): normalizer (assets/normalize.json), spaCy-rule tokenizer + special cases,
+  averaged-perceptron tagger (assets/tagger.json.gz 1.24 MB, 97.5% vs spaCy), misaki lexicon/rules port (100% exact on
+  3000 dev sentences given spaCy's tokens+tags), OOV net (assets/oov.onnx 0.73M params, 3 MB; 72% word acc / 9% PER vs
+  espeak on unseen words). vs misaki+spaCy+espeak on 2500 held-out sentences: PER 0.50% / exact 88.0% (normalization on),
+  0.27% / 90.9% (off); sentences without OOV words 95.4% / 97.5%. End to end 50 unseen sentences through the same model:
+  47/50 identical, UTMOS 4.431 vs 4.431, WER 2.6% vs 2.7%. G2P 0.5-1 ms per sentence, G2P() load ~0.3 s (lexicon 73 ms,
+  tagger 95 ms, OOV 25 ms); Hibari() ready in ~0.7 s incl. imports. scripts/bench_package.py: 175x realtime 1 thread / 225x 4 threads
+  (20 held-out sentences, 160 s audio, load 16%); WSL 210x / 300x.
+- Docs: README.md (users/developers/researchers, ONNX I/O spec, reproduce commands), MODEL_CARD.md, LICENSE (Apache-2.0),
+  NOTICE (Kokoro-82M, misaki, spaCy, espeak-ng data provenance, StyleTTS2 MIT, num2words).
+- Research data for the G2P lives in g2p_work/ (gitignored, ~1 GB): dump_misaki.py reference dumps, espeak labels, trainings.
 
-## Size and speed sheet 2026-10-19 (docs/METRICS.md, scripts/bench_all.py)
-20 sentences (109 s audio), warm, round-robin, best-of-3, load 13-35%: ours int8 7.94 MB 128x (1 thr) / 175x (4 thr), 158 MB peak RSS, load 0.8 s; Paradee int8 9.04 MB 18x / 27x, 176 MB, 2.1 s; Kokoro-7M 30 MB 17x / 27x, 889 MB, 10.9 s; teacher 327 MB 1.9x / 3.9x, 1.5 GB, 10.6 s. Latency 1.8 s / 7.9 s sentence at 1 thread: ours int8 12 / 71 ms, Paradee int8 87 / 602 ms, Kokoro-7M 108 / 357 ms, teacher 739 / 3880 ms.
-- [ ] Re-run `python scripts/bench_all.py` on a quiet machine (timing children wait for <=20% load but other sessions came back mid-run; Paradee did 22-24x when quiet).
+## Open (G2P)
+- [ ] Tagger: "that" DT vs IN (12/2500), "in" RP vs IN (8), "I object" (VBP vs NN); 2.2 MB unpruned -> 1.24 MB pruned at |w|>=1.5
+      (97.46%); prune 2.5 gives 0.69 MB / 38 ms load at 97.1% if size matters more.
+- [ ] OOV net: 72% word accuracy vs espeak on unseen names; a decoder or more data (espeak on more names) would help; words
+      with letters+digits are split (letters -> net, digits -> number reader); "H2O" reads "H to O" like misaki.
+- [ ] Normalizer: "9/11" -> "September eleventh" (date) vs misaki "nine eleven"; dates assume US month/day; "St." -> Street
+      except before a capitalized word (Saint); add more units/abbreviations as users hit them. Rules are regexes in
+      normalize.py, tables in assets/normalize.json (native port needs to re-implement the regexes).
+- [ ] Load time: lexicon JSON gz 73 ms (pickle would be 2x faster but not language-neutral); tagger 95 ms; whole Hibari()
+      incl. onnxruntime import ~0.5 s.
+- [ ] Phase 2: native no-Python CLI/library (C/Rust) for Mac/Windows/Linux: ONNX Runtime static or own int8 kernels, real FFT;
+      port tokenizer regexes, perceptron, lexicon lookup, number words, OOV net (plain transformer encoder + CTC collapse).
+      CI workflow ready; Mac build needs GitHub. Publishing (GitHub/PyPI/HF): local only until reese says.
 
-## Open
-- [ ] Listen to runs/compare_v3/ab*.wav (before ProsodyNet reese found v3 10k ab0 "fuzzy and robotic", ab2 "nearly perfect").
-- [ ] Size: int8 7.94 MB vs Paradee 9.04. Convs stay fp32 (ConvInteger 2x slower than fp32 Conv in ORT 1.29 x86; re-test on ARM or QLinearConv static quant). ProsodyNet (c 192, 6 shared attention layers, 6 dilated ConvNeXt) is the next thing to shrink.
-- [ ] Speed (docs/METRICS.md): int8 net 4.1 ms per s of audio, host DSP 3.7 ms (pulses 0.6, stft 0.65, noise 0.7, combine 1.6, ola 0.5; scripts/profile_dsp.py export/v3_final/tiny.int8.onnx). 4 threads only help the net part (2.2 ms), the DSP is single-threaded numpy. C runtime idea: analytic pulse spectrum per frame (Hann kernel at h*f0, phase h*theta) skips the audio-rate pulses and forward FFT; approximation, needs a short fine-tune.
-- [ ] int8 F0 differs from fp32 by 0.6 Hz mean / 5.4 Hz max (ProsodyNet MatMuls quantized), durations within +-2 frames; UTMOS equal. If pitch is off by ear, leave ProsodyNet's dur/pro heads fp32.
-- [ ] Training schedule: v1 and v2 peaked at 60k, v3 peaks at 40k with ProsodyNet (free prosody keeps improving to 50k). Shorter cosine or lower GAN weight late if retraining.
-- [ ] v3 noise branch carries ~0.35% of spectral energy (per-element up to 23x the other branches, so not droppable); the free-phase branch carries most above ~2.5 kHz.
-- [ ] On-device G2P: misaki+spacy is far heavier than the model. (a) misaki dictionary (us_gold/us_silver json) + espeak-ng for OOV, no spacy; (b) tiny G2P net (<0.5M, trained on misaki's dictionary + teacher phonemes in data/dist); (c) precomputed phoneme cache. The export takes phoneme ids (export/vocab.json).
-- [ ] Measure on a real low-end device (or emulate: 1 thread, low clock). scipy.fft keeps float32; check pocketfft on ARM.
-- [ ] If audio sounds robotic: WavLM feature-matching loss (Kokoro-7M notes say it fixes phase).
+## Open (model)
+- [ ] Re-run `python scripts/bench_all.py` on a quiet machine (Paradee did 22-24x when quiet).
+- [ ] Listen to runs/compare_v3/ab*.wav and runs/g2p_e2e/*.wav (hibari G2P vs misaki G2P).
+- [ ] Size: convs stay fp32 (ConvInteger 2x slower than fp32 Conv in ORT 1.29 x86; re-test on ARM / QLinearConv).
+      ProsodyNet (c 192, 6 shared attention layers, 6 dilated ConvNeXt) is the next thing to shrink.
+- [ ] Speed: int8 net 4.1 ms per s of audio, host DSP 3.7 ms (single-threaded numpy). C runtime idea: analytic pulse spectrum.
+- [ ] int8 F0 differs from fp32 by 0.6 Hz mean / 5.4 Hz max; UTMOS equal. If pitch is off by ear, leave ProsodyNet heads fp32.
+- [ ] Training schedule: v3 peaks at 40k with ProsodyNet. Shorter cosine or lower GAN weight late if retraining.
 - [ ] Corpus is mostly declarative prose: add questions/exclamations/dialogue for prosody range.
+- [ ] Measure on a real low-end device (1 thread, low clock); scipy.fft keeps float32; check pocketfft on ARM.
+- [ ] Cross-sentence prosody: sentences are synthesized independently and concatenated (no extra pause inserted).
+
+## Results (see docs/METRICS.md for conditions)
+| model | MB | xRT 1 thr | UTMOS | WER |
+| teacher Kokoro-82M | 327 | 1.9 | 4.52 | 2.8% |
+| Paradee int8 | 9.04 | 18 | 4.41 | 2.8% |
+| hibari int8 (v3 40k + ProsodyNet) | 7.94 | 128 | 4.43 | 2.7% |
 
 ## History
-- Teacher dump: 30k sentences (29,999 rows, 66 h) in data/dist. Held-out split = last 200 of the shuffled rows (scripts/diagnose_gap.py). compare_paradee.py uses sentences [30000:] that no model trained on; its teacher UTMOS/WER match Paradee's paper.
-- v1 (1.34M, free-phase Vocos-style head, runs/tiny_v1): 60k int8 2.53 MB, 326x, UTMOS 3.63, WER 4.9%; 150k worse. Teacher-forced prosody didn't close the gap, so the decoder was the bottleneck.
-- v2 (decoder c_dec 256 x 8, runs/tiny_v2, init text side from v1 60k): 60k UTMOS 3.74; harmonics above ~500 Hz broke up (frame-wise absolute phase incoherent; teacher and Paradee keep a sine source).
-- v3 (pulse source, runs/tiny_v3, init from v2 60k, 60k steps): 10k UTMOS 4.32 clean harmonics; with ProsodyNet 30k 4.40, 40k 4.44. scripts/fuzz_probe.py showed the remaining per-row loss came from predicted pitch (~1 st off, range 16% flat): ProsodyNet (training/train_prosody.py, whole sentences, 18 min on GPU 1) pitch err 1.06 -> 0.47 st, range 0.84 -> 0.95, dur err 0.32 -> 0.25 frames.
-- Export: export/export_onnx.py (--prosody <ckpt>; durations and token->frame expansion in-graph with opset-11 ops; shared attention weights folded once; int8 dynamic MatMul only). infer_numpy.py: numpy/scipy float32 host DSP, matches torch to_wav to 3e-5..8e-4 wav max err (export/test_istft.py <ckpt> <dir> --prosody <pnet>); pulses via broadcast interpolation, branches combined in complex64.
-- GAN phase 1.8 -> ~7.2 it/s (batch 16): bf16 autocast for D/G losses, MRD hops fft/4, real+fake batched, 0.8 s GAN sub-window, TPRLS off (--tprls). Step was WDDM launch-bound.
-
-## Portability (reese 2026-10-18: "needs to run on many devices")
-- [ ] Keep the graph to portable ops only: conv1d (incl. depthwise), linear, layernorm, gelu, softmax attention, CumSum/Range/Less/ReduceSum/Gather for the duration expansion (all opset-11, fine for ORT-web); pulses/noise/iSTFT live in host code.
-- [ ] Targets: Windows x64 + ARM64, macOS Apple Silicon + Intel, old/weak laptops. No Python on the user's machine: self-contained binary per platform (dependency-free C runtime with int8 weights and a real FFT, or ONNX Runtime static build), macOS universal. Also ORT Android/iOS, onnxruntime-web WASM/WebGPU.
-- [ ] Portable G2P: lexicon lookup (misaki gold+silver dicts, compressed) + small fallback (espeak-ng or a tiny G2P net).
-
-## Productize (reese 2026-10-19: "finalize and perfect it to make it runnable on mac, windows and linux and a way to turn plain text into the sounds the model reads, incredibly user and developer friendly and researcher friendly without compromising quality and performance")
-- [x] Name: **hibari** (reese 2026-10-19). Phase 1 (G2P, pip package + CLI, docs) running headless: logs/fable_task4.md -> logs/fable_agent5.log (Fable max, API credits). Phase 2 = native no-Python CLI/library + CI. Publishing: local only until reese says (declined the GitHub/PyPI question).
-- [ ] Text -> phonemes without GPL espeak-ng: normalizer (numbers, dates, money, abbreviations) + misaki-convention lexicon + tiny OOV G2P net; measure phoneme error vs misaki and end-to-end UTMOS/WER.
-- [ ] pip package (onnxruntime + numpy) with Python API, streaming, speed control, CLI; native no-Python CLI/library for Mac/Windows/Linux (CI workflow ready, Mac build needs GitHub).
-- [ ] Researcher docs: reproducible pipeline (dump, train decoder, train ProsodyNet, export, eval), model card with docs/METRICS.md numbers.
+- Teacher dump: 30k sentences (66 h) in data/dist. compare_paradee.py uses sentences [30000:] that no model trained on.
+- v1 (1.34M free-phase): UTMOS 3.63. v2 (c_dec 256 x 8): 3.74, harmonics broke up. v3 (pulse source): 10k 4.32;
+  + ProsodyNet 40k 4.44 (pitch err 1.06 -> 0.47 st).
+- Export: export/export_onnx.py (--prosody <ckpt>; durations and token->frame expansion in-graph, opset-11 ops; speed input
+  added 2026-10-19). infer_numpy.py / src/hibari/dsp.py: numpy/scipy float32 host DSP, matches torch to_wav (tests/test_parity.py).
+- G2P eval sets: g2p_work/eval.jsonl = shuffled corpus lines[31000:33500], dev = [33500:36500], tagger/OOV training from
+  [40000:340000] + espeak labels of lexicon words and 192k corpus OOV words; e2e sentences = lines[30000:] first 50.

@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hibari"
+version = "0.1.0"
+description = "Tiny American English text-to-speech: 7.9 MB model, 100x realtime on one CPU core, text in, 24 kHz audio out"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.9"
+authors = [{name = "Maureese Williams"}]
+keywords = ["tts", "text-to-speech", "speech synthesis", "onnx", "kokoro"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+dependencies = ["numpy>=1.22", "onnxruntime>=1.16"]
+
+[project.optional-dependencies]
+fast = ["scipy>=1.9"]
+dev = ["pytest", "scipy"]
+
+[project.scripts]
+hibari = "hibari.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+hibari = ["assets/*"]

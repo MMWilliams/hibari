@@ -1,0 +1,469 @@
+{
+ "months": {
+  "jan": "January",
+  "feb": "February",
+  "mar": "March",
+  "apr": "April",
+  "may": "May",
+  "jun": "June",
+  "jul": "July",
+  "aug": "August",
+  "sep": "September",
+  "oct": "October",
+  "nov": "November",
+  "dec": "December"
+ },
+ "titles": {
+  "Mr": "Mr",
+  "Mrs": "Mrs",
+  "Ms": "Miz",
+  "Dr": "Dr",
+  "Prof": "Professor",
+  "St": "Saint",
+  "Mt": "Mount",
+  "Ft": "Fort",
+  "Gen": "General",
+  "Gov": "Governor",
+  "Sen": "Senator",
+  "Rep": "Representative",
+  "Capt": "Captain",
+  "Lt": "Lieutenant",
+  "Col": "Colonel",
+  "Sgt": "Sergeant",
+  "Cmdr": "Commander",
+  "Rev": "Reverend",
+  "Hon": "Honorable",
+  "Pres": "President",
+  "Supt": "Superintendent",
+  "Cpl": "Corporal",
+  "Maj": "Major",
+  "Adm": "Admiral",
+  "Fr": "Father",
+  "Msgr": "Monsignor"
+ },
+ "abbreviations": {
+  "Mr.": "Mr",
+  "Mrs.": "Mrs",
+  "Ms.": "Miz",
+  "Dr.": "Dr",
+  "Jr.": "Junior",
+  "Sr.": "Senior",
+  "St.": "Street",
+  "Mt.": "Mount",
+  "Ave.": "Avenue",
+  "Blvd.": "Boulevard",
+  "Rd.": "Road",
+  "Ln.": "Lane",
+  "Hwy.": "Highway",
+  "Pkwy.": "Parkway",
+  "Ste.": "Suite",
+  "Apt.": "Apartment",
+  "Bldg.": "Building",
+  "Ltd.": "Limited",
+  "Inc.": "Incorporated",
+  "Corp.": "Corporation",
+  "Co.": "Company",
+  "Bros.": "Brothers",
+  "Dept.": "Department",
+  "Univ.": "University",
+  "Assn.": "Association",
+  "Govt.": "Government",
+  "approx.": "approximately",
+  "est.": "established",
+  "vs.": "versus",
+  "vs": "versus",
+  "vol.": "volume",
+  "Vol.": "Volume",
+  "fig.": "figure",
+  "Fig.": "Figure",
+  "ch.": "chapter",
+  "Ch.": "Chapter",
+  "pp.": "pages",
+  "ed.": "edition",
+  "eds.": "editors",
+  "no.": "number",
+  "nos.": "numbers",
+  "Prof.": "Professor",
+  "Gen.": "General",
+  "Gov.": "Governor",
+  "Sen.": "Senator",
+  "Rep.": "Representative",
+  "Capt.": "Captain",
+  "Lt.": "Lieutenant",
+  "Col.": "Colonel",
+  "Sgt.": "Sergeant",
+  "Rev.": "Reverend",
+  "Hon.": "Honorable",
+  "Pres.": "President",
+  "Atty.": "Attorney",
+  "Supt.": "Superintendent",
+  "cf.": "compare",
+  "et al.": "et al",
+  "Jan.": "January",
+  "Feb.": "February",
+  "Mar.": "March",
+  "Apr.": "April",
+  "Jun.": "June",
+  "Jul.": "July",
+  "Aug.": "August",
+  "Sep.": "September",
+  "Sept.": "September",
+  "Oct.": "October",
+  "Nov.": "November",
+  "Dec.": "December",
+  "Mon.": "Monday",
+  "Tue.": "Tuesday",
+  "Tues.": "Tuesday",
+  "Wed.": "Wednesday",
+  "Thu.": "Thursday",
+  "Thurs.": "Thursday",
+  "Fri.": "Friday",
+  "Sat.": "Saturday",
+  "Sun.": "Sunday",
+  "w/": "with",
+  "w/o": "without",
+  "aka": "also known as",
+  "AKA": "also known as",
+  "BTW": "by the way",
+  "IMO": "in my opinion",
+  "TBD": "to be determined"
+ },
+ "units": {
+  "km": [
+   "kilometer",
+   "kilometers"
+  ],
+  "cm": [
+   "centimeter",
+   "centimeters"
+  ],
+  "mm": [
+   "millimeter",
+   "millimeters"
+  ],
+  "kg": [
+   "kilogram",
+   "kilograms"
+  ],
+  "mg": [
+   "milligram",
+   "milligrams"
+  ],
+  "lb": [
+   "pound",
+   "pounds"
+  ],
+  "lbs": [
+   "pounds",
+   "pounds"
+  ],
+  "oz": [
+   "ounce",
+   "ounces"
+  ],
+  "ft": [
+   "foot",
+   "feet"
+  ],
+  "mi": [
+   "mile",
+   "miles"
+  ],
+  "ml": [
+   "milliliter",
+   "milliliters"
+  ],
+  "kph": [
+   "kilometers per hour",
+   "kilometers per hour"
+  ],
+  "mph": [
+   "miles per hour",
+   "miles per hour"
+  ],
+  "km/h": [
+   "kilometers per hour",
+   "kilometers per hour"
+  ],
+  "Hz": [
+   "hertz",
+   "hertz"
+  ],
+  "kHz": [
+   "kilohertz",
+   "kilohertz"
+  ],
+  "MHz": [
+   "megahertz",
+   "megahertz"
+  ],
+  "GHz": [
+   "gigahertz",
+   "gigahertz"
+  ],
+  "KB": [
+   "kilobyte",
+   "kilobytes"
+  ],
+  "kB": [
+   "kilobyte",
+   "kilobytes"
+  ],
+  "MB": [
+   "megabyte",
+   "megabytes"
+  ],
+  "GB": [
+   "gigabyte",
+   "gigabytes"
+  ],
+  "TB": [
+   "terabyte",
+   "terabytes"
+  ],
+  "Mbps": [
+   "megabits per second",
+   "megabits per second"
+  ],
+  "Gbps": [
+   "gigabits per second",
+   "gigabits per second"
+  ],
+  "hr": [
+   "hour",
+   "hours"
+  ],
+  "hrs": [
+   "hours",
+   "hours"
+  ],
+  "min": [
+   "minute",
+   "minutes"
+  ],
+  "mins": [
+   "minutes",
+   "minutes"
+  ],
+  "sec": [
+   "second",
+   "seconds"
+  ],
+  "secs": [
+   "seconds",
+   "seconds"
+  ],
+  "ms": [
+   "millisecond",
+   "milliseconds"
+  ],
+  "sq ft": [
+   "square foot",
+   "square feet"
+  ],
+  "sq mi": [
+   "square mile",
+   "square miles"
+  ],
+  "yd": [
+   "yard",
+   "yards"
+  ],
+  "kWh": [
+   "kilowatt hour",
+   "kilowatt hours"
+  ],
+  "kW": [
+   "kilowatt",
+   "kilowatts"
+  ],
+  "MW": [
+   "megawatt",
+   "megawatts"
+  ],
+  "GW": [
+   "gigawatt",
+   "gigawatts"
+  ],
+  "mAh": [
+   "milliamp hours",
+   "milliamp hours"
+  ],
+  "fps": [
+   "frames per second",
+   "frames per second"
+  ],
+  "cc": [
+   "cubic centimeter",
+   "cubic centimeters"
+  ],
+  "mcg": [
+   "microgram",
+   "micrograms"
+  ],
+  "µg": [
+   "microgram",
+   "micrograms"
+  ],
+  "nm": [
+   "nanometer",
+   "nanometers"
+  ],
+  "µm": [
+   "micrometer",
+   "micrometers"
+  ],
+  "pct": [
+   "percent",
+   "percent"
+  ]
+ },
+ "symbols": {
+  "=": "equals",
+  "<": "less than",
+  ">": "greater than",
+  "~": "about",
+  "°": "degrees",
+  "¢": "cents",
+  "§": "section",
+  "¶": "paragraph",
+  "±": "plus or minus",
+  "×": "times",
+  "÷": "divided by",
+  "™": "",
+  "®": "",
+  "©": "copyright",
+  "•": "",
+  "→": "to",
+  "←": "",
+  "½": "one half",
+  "¼": "one quarter",
+  "¾": "three quarters",
+  "²": " squared",
+  "³": " cubed",
+  "µ": "micro",
+  "|": ", ",
+  "*": " ",
+  "^": " to the power of ",
+  "_": " ",
+  "\\": " ",
+  "#": " hashtag "
+ },
+ "currency": {
+  "¥": [
+   "yen",
+   "yen"
+  ],
+  "₹": [
+   "rupee",
+   "rupees"
+  ],
+  "₩": [
+   "won",
+   "won"
+  ],
+  "¢": [
+   "cent",
+   "cents"
+  ],
+  "Rs": [
+   "rupee",
+   "rupees"
+  ],
+  "USD": [
+   "dollar",
+   "dollars"
+  ],
+  "EUR": [
+   "euro",
+   "euros"
+  ],
+  "GBP": [
+   "pound",
+   "pounds"
+  ],
+  "$": [
+   "dollar",
+   "dollars"
+  ],
+  "£": [
+   "pound",
+   "pounds"
+  ],
+  "€": [
+   "euro",
+   "euros"
+  ]
+ },
+ "roman_cardinal": [
+  "Chapter",
+  "chapter",
+  "Part",
+  "part",
+  "Act",
+  "Scene",
+  "Section",
+  "section",
+  "Volume",
+  "volume",
+  "Book",
+  "book",
+  "Phase",
+  "phase",
+  "Article",
+  "article",
+  "World War",
+  "Mark",
+  "Type",
+  "type",
+  "Level",
+  "level",
+  "Stage",
+  "stage",
+  "Class",
+  "class",
+  "Grade",
+  "grade",
+  "Super Bowl",
+  "Apollo",
+  "Gemini",
+  "Final Fantasy",
+  "Episode",
+  "Round",
+  "round",
+  "Rocky",
+  "Star Wars Episode"
+ ],
+ "roman_ordinal": [
+  "Pope",
+  "King",
+  "Queen",
+  "Henry",
+  "Louis",
+  "Edward",
+  "George",
+  "William",
+  "Charles",
+  "James",
+  "Richard",
+  "Elizabeth",
+  "Napoleon",
+  "Pius",
+  "Benedict",
+  "Leo",
+  "John Paul",
+  "Ramses",
+  "Frederick",
+  "Philip",
+  "Alexander",
+  "Nicholas",
+  "Peter",
+  "Catherine",
+  "Ivan",
+  "Umberto",
+  "Victor Emmanuel",
+  "Gustav",
+  "Christian",
+  "Ferdinand"
+ ]
+}

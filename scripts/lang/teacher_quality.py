@@ -8,7 +8,7 @@ CC-BY-4.0), rows 5..35 words / 8..60 characters, without digits so the transcrip
     python scripts/lang/teacher_quality.py --n 30 --out runs/lang/teacher
 """
 import argparse, json, os, random, re, sys, unicodedata
-import numpy as np, soundfile as sf, torch
+import numpy as np, soundfile as sf, torch, zhconv
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "kokoro_patched"))
@@ -27,6 +27,8 @@ os.makedirs(a.out, exist_ok=True)
 
 
 def sentences(code):
+    """Mandarin: simplified-script sentences only (Kokoro's zh pipeline reads simplified; the corpus mixes both).
+    The transcript comparison is also done in simplified script."""
     _, _, f, worded = LANGS[code]
     if f is None:
         import gzip
@@ -45,6 +47,8 @@ def sentences(code):
             continue
         if not worded and not 8 <= len(l) <= 60:
             continue
+        if code == "z" and zhconv.convert(l, "zh-cn") != l:
+            continue
         ok.append(l)
         if len(ok) == a.n:
             break
@@ -52,8 +56,15 @@ def sentences(code):
 
 
 def chars(s):
-    s = unicodedata.normalize("NFKC", s).lower()
+    s = zhconv.convert(unicodedata.normalize("NFKC", s), "zh-cn").lower()
     return "".join(c for c in s if unicodedata.category(c)[0] in "LN")
+
+
+def kana(s):
+    """Japanese reading (katakana) of a text, so kanji chosen differently by Whisper for the same sound do
+    not count as errors (homophones, 痕/根)."""
+    import pyopenjtalk
+    return chars(pyopenjtalk.g2p(s, kana=True))
 
 
 def words(s):
@@ -93,16 +104,19 @@ asr = hf_pipeline("automatic-speech-recognition", model="openai/whisper-large-v3
 res = {}
 for code, rows in items.items():
     voice, wlang, _, worded = LANGS[code]
-    ce = cn = we = wn = 0
+    ce = cn = we = wn = ke = kn = 0
     for r in rows:
         y, _ = sf.read(r["wav"], dtype="float32")
         hyp = asr({"raw": y, "sampling_rate": SR}, generate_kwargs={"language": wlang, "task": "transcribe"})["text"]
         r["hyp"] = hyp
         ce += edits(chars(r["text"]), chars(hyp)); cn += len(chars(r["text"]))
+        if code == "j":
+            ke += edits(kana(r["text"]), kana(hyp)); kn += len(kana(r["text"]))
         if worded:
             we += edits(words(r["text"]), words(hyp)); wn += len(words(r["text"]))
     res[code] = {"voice": voice, "n": len(rows), "cer": ce / max(cn, 1), "wer": we / wn if worded else None,
-                 "audio_s": sum(r["sec"] for r in rows)}
+                 "cer_kana": ke / kn if code == "j" else None, "audio_s": sum(r["sec"] for r in rows)}
     print(f"{code} {voice:12s} CER {100 * res[code]['cer']:5.1f}%" + (f"  WER {100 * res[code]['wer']:5.1f}%" if worded else "")
+          + (f"  reading CER {100 * res[code]['cer_kana']:5.1f}%" if code == "j" else "")
           + f"  ({len(rows)} sentences, {res[code]['audio_s']:.0f} s)", flush=True)
 json.dump({"results": res, "items": items}, open(f"{a.out}/results.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)

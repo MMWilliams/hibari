@@ -1,9 +1,10 @@
 # hibari
 
-Tiny American English text-to-speech. One 7.9 MB model, about 130x realtime on a single CPU core, text in,
-24 kHz audio out. Pure Python package with two dependencies (numpy, onnxruntime); runs on Windows, macOS and
-Linux, x64 and arm64. Distilled from Kokoro-82M (voice af_heart), it scores UTMOS 4.43 against the teacher's
-4.52 while running 65x faster.
+Tiny English text-to-speech. 7.9 MB per voice, about 130x realtime on a single CPU core, text in, 24 kHz
+audio out. Pure Python package with two dependencies (numpy, onnxruntime); runs on Windows, macOS and
+Linux, x64 and arm64. Each voice is distilled from one Kokoro-82M voice: the default, af_heart, scores
+UTMOS 4.43 against the teacher's 4.52 while running 65x faster. Three voices: American female (heart, in
+the package), American male (fenrir) and British female (emma), the last two downloaded on first use.
 
 hibari is Japanese for skylark. Model files, checkpoints and audio samples:
 https://huggingface.co/maureesewilliams/hibari
@@ -15,7 +16,7 @@ pip install hibari-tts
 pip install "hibari-tts[fast]"      # adds scipy: 2x faster signal processing
 ```
 
-The PyPI name is hibari-tts (hibari was taken); the import and the command are both `hibari`. Python 3.9 or newer. Everything (model, lexicon, phonemizer) is inside the wheel, nothing is downloaded.
+The PyPI name is hibari-tts (hibari was taken); the import and the command are both `hibari`. Python 3.9 or newer. Everything for the default voice (model, lexicon, phonemizer) is inside the wheel; the other voices are one 7.9 MB download each, on first use.
 
 ## Command line
 
@@ -25,6 +26,8 @@ echo "Reads standard input too." | hibari -o out.wav
 hibari "Say it out loud." --play                  # winsound / afplay / aplay or paplay
 hibari "Faster, please." --speed 1.25 -o fast.wav
 hibari "Hello there." --phonemes                  # həlˈO ðˈɛɹ.
+hibari "Hello there." --voice emma -o emma.wav    # British English; fenrir = American male
+hibari --list-voices                              # the voices and whether they are downloaded
 hibari --bench                                    # load time, x realtime, G2P time
 ```
 
@@ -54,6 +57,29 @@ short and long sentences on a busier machine). `Hibari(model=path)` loads anothe
 
 Custom pronunciations inline, misaki style: `tts("Say [hibari](/hibˈɑɹi/) now.")`.
 
+## Voices
+
+| name | Kokoro voice | language | where |
+|---|---|---|---|
+| heart (default) | af_heart | American English, female | in the package |
+| fenrir | am_fenrir | American English, male | downloaded on first use, 7.9 MB |
+| emma | bf_emma | British English, female | downloaded on first use, 7.9 MB |
+
+```python
+tts = Hibari(voice="emma")            # downloads voices/bf_emma.int8.onnx once, then loads from the cache
+```
+
+Every voice is a complete model with the same architecture, size and speed as the default one; there is no
+multi-voice model, so memory and latency per use do not change. The registry (`hibari/assets/voices.json`)
+holds each file's size and sha256; `hibari.voices.voice_path(name)` fetches the file with urllib from
+https://huggingface.co/maureesewilliams/hibari/resolve/main/voices/, checks the hash and renames it into place
+atomically. The cache directory is `HIBARI_HOME` if set, else `%LOCALAPPDATA%\hibari` on Windows,
+`~/Library/Caches/hibari` on macOS and `~/.cache/hibari` (or `$XDG_CACHE_HOME/hibari`) on Linux. Offline
+without the file, `Hibari(voice=...)` raises a RuntimeError that names the URL and the path to copy the file
+to by hand. British voices use the British spelling-to-sound rules (misaki's gb lexicon and a British
+out-of-vocabulary net, 2.4 MB in the wheel); the text normalizer is shared (dates are read US style).
+Per-voice quality numbers are in MODEL_CARD.md.
+
 ## Text to phonemes
 
 The model reads misaki-style phoneme strings (the ones Kokoro-82M was trained on). hibari produces them
@@ -67,10 +93,12 @@ without spaCy or espeak-ng:
 3. Averaged-perceptron part-of-speech tagger trained on spaCy's tags (`tagger.py`, `assets/tagger.json.gz`),
    97.7% agreement with spaCy; it only matters for the lexicon's part-of-speech entries (read, live, record,
    present...) and function-word rules (a, the, to, in, by, used).
-4. misaki's lexicon and rules, ported (`lexicon.py`, `assets/lexicon_us_gold.json.gz` and silver): numbers,
-   ordinals, years, decimals, $/£/€, percent, stems (-s, -ed, -ing), stress, context (the/to before vowels).
-5. Out-of-vocabulary words: a 0.7 M parameter character transformer (`assets/oov.onnx`, 2.8 MB) trained on
-   espeak-ng's readings of 418 k words, so unknown words sound like the reference pipeline's.
+4. misaki's lexicon and rules, ported (`lexicon.py`, `assets/lexicon_us_gold.json.gz` and silver; the gb
+   pair and three suffix rules for British voices): numbers, ordinals, years, decimals, $/£/€, percent,
+   stems (-s, -ed, -ing), stress, context (the/to before vowels).
+5. Out-of-vocabulary words: a 0.7 M parameter character transformer (`assets/oov.onnx`, 2.8 MB; `oov_gb.onnx`,
+   int8, 0.9 MB, for British) trained on espeak-ng's en-us (en-gb) readings of 418 k (383 k) words, so unknown
+   words sound like the reference pipeline's.
 
 Accuracy against the reference pipeline (misaki 0.9.4 + spaCy en_core_web_sm + espeak-ng) on 2,500 held-out
 corpus sentences (`scripts/g2p/eval_g2p.py g2p_work/eval.jsonl`):
@@ -81,6 +109,11 @@ corpus sentences (`scripts/g2p/eval_g2p.py g2p_work/eval.jsonl`):
 | all sentences, normalization off (pure misaki emulation) | 0.27% | 90.9% |
 | sentences without out-of-vocabulary words (80%), normalization on / off | 0.15% / 0.05% | 95.4% / 97.5% |
 | sentences with out-of-vocabulary words (20%), normalization on | 1.65% | 58.3% |
+
+British (`G2P(british=True)`, used by the emma voice) against misaki british=True + espeak-ng en-gb on 1,500
+other held-out sentences (`scripts/g2p/eval_g2p.py g2p_work/eval_gb.jsonl --british`): PER 0.57%, exact 85.9%
+(sentences without out-of-vocabulary words: 0.17% / 95.1%); the British OOV net gets 74% of unseen words
+identical to espeak-ng en-gb (PER 7.8%), where the American net scored 15% / 20.7% on the same words.
 
 With normalization off the output is a re-implementation of misaki, so the residual differences are the
 tagger (97.5% agreement with spaCy; "that" and "in" are the common cases) and the out-of-vocabulary net

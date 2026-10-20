@@ -16,9 +16,11 @@ tags:
 
 # hibari
 
-Tiny American English text-to-speech. One 7.9 MB int8 ONNX model, 6.15 M parameters, about 130x realtime on
-a single CPU core, 24 kHz audio. Distilled from [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)
-(voice af_heart): UTMOS 4.43 against the teacher's 4.52, while running 65x faster. Comes with its own
+Tiny English text-to-speech. 7.9 MB int8 ONNX models, 6.15 M parameters each, about 130x realtime on a
+single CPU core, 24 kHz audio. Each voice is distilled from one [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)
+voice: the default (af_heart) scores UTMOS 4.43 against the teacher's 4.52 while running 65x faster. Three
+voices: heart (American female, inside the pip package), fenrir (American male) and emma (British female),
+the last two in `voices/` here and downloaded by the package on first use. Comes with its own
 text-to-phoneme front end (no spaCy, no espeak-ng), so plain text goes in and audio comes out.
 
 hibari is Japanese for skylark. Code, Python package and training pipeline:
@@ -43,11 +45,16 @@ hibari "Hello there, this is hibari." -o hello.wav
 
 ```python
 from hibari import Hibari
-tts = Hibari()
+tts = Hibari()                         # voice "heart"; Hibari(voice="emma") or "fenrir" download once
 audio = tts("Hello there.")            # numpy float32, 24 kHz
 tts.save("Hello there.", "hello.wav")
 for chunk in tts.stream(long_text):    # one array per sentence, for low latency
     ...
+```
+
+```
+hibari "Hello there." --voice fenrir -o fenrir.wav
+hibari --list-voices
 ```
 
 The PyPI name is hibari-tts; the import and the command are `hibari`. The package depends only on numpy and onnxruntime and runs on Windows, macOS and Linux (x64 and arm64).
@@ -58,8 +65,10 @@ or study the model.
 
 | path | what |
 |---|---|
-| onnx/hibari.int8.onnx | shipping model, int8 MatMul weights (7.9 MB) |
+| onnx/hibari.int8.onnx | shipping model of the heart voice, int8 MatMul weights (7.9 MB) |
 | onnx/hibari.fp32.onnx | same model in fp32 (24.8 MB) |
+| voices/am_fenrir.int8.onnx, voices/bf_emma.int8.onnx | the fenrir and emma voices, same interface (7.9 MB each; the package downloads these, sha256 in its registry) |
+| voices/am_fenrir.fp32.onnx, voices/bf_emma.fp32.onnx | the same in fp32 |
 | g2p/ | text-to-phoneme data: misaki lexicons, tagger weights, tokenizer special cases, normalization tables, out-of-vocabulary net (oov.onnx), phoneme vocabulary |
 | checkpoints/decoder_v3_40k.safetensors | PyTorch weights of the decoder (TinyKokoro, kwargs in the file metadata) |
 | checkpoints/prosody_v1.safetensors | PyTorch weights of ProsodyNet (durations, pitch, energy) |
@@ -119,7 +128,8 @@ For reading English text aloud on devices without a GPU, where size and latency 
 distillation and small vocoders. Not for voice cloning or impersonation, or for use where listeners aren't
 told the speech is synthetic.
 
-- One female American English voice, English only; no speaker or style input. Speed is adjustable.
+- Three fixed voices (American female and male, British female), English only; no speaker or style input.
+  Speed is adjustable.
 - Trained on declarative web prose: questions and exclamations have a narrower pitch range than the teacher.
 - Sentences are synthesized one at a time, with no cross-sentence prosody.
 - Unknown words (about 1 in 5 sentences has one) are read by a small network that gets about 72% of unseen

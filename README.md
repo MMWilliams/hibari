@@ -11,8 +11,8 @@ https://huggingface.co/maureesewilliams/hibari
 ## Install
 
 ```
-pip install https://github.com/MMWilliams/hibari/releases/download/v0.1.0/hibari-0.1.0-py3-none-any.whl
-pip install "hibari[fast] @ https://github.com/MMWilliams/hibari/releases/download/v0.1.0/hibari-0.1.0-py3-none-any.whl"   # adds scipy: 2x faster signal processing
+pip install hibari
+pip install "hibari[fast]"        # adds scipy: 2x faster signal processing
 ```
 
 Python 3.9 or newer. Everything (model, lexicon, phonemizer) is inside the wheel, nothing is downloaded.

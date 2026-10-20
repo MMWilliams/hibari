@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "hibari"
 version = "0.1.0"
-description = "Tiny American English text-to-speech: 7.9 MB model, 100x realtime on one CPU core, text in, 24 kHz audio out"
+description = "Tiny American English text-to-speech: 7.9 MB model, about 130x realtime on one CPU core, text in, 24 kHz audio out"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.9"
@@ -15,9 +15,17 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
     "Topic :: Multimedia :: Sound/Audio :: Speech",
 ]
 dependencies = ["numpy>=1.22", "onnxruntime>=1.16"]
+
+[project.urls]
+Homepage = "https://github.com/MMWilliams/hibari"
+Model = "https://huggingface.co/maureesewilliams/hibari"
+Issues = "https://github.com/MMWilliams/hibari/issues"
 
 [project.optional-dependencies]
 fast = ["scipy>=1.9"]

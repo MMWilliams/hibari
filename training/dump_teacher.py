@@ -16,6 +16,7 @@ SPF = 600
 ap = argparse.ArgumentParser()
 ap.add_argument("--text", default="data/sentences.txt.gz")
 ap.add_argument("--n", type=int, default=60000)
+ap.add_argument("--start", type=int, default=0, help="first sentence of the shuffled list (0 = the same sentences as af_heart)")
 ap.add_argument("--shard", type=int, default=0)
 ap.add_argument("--nshards", type=int, default=1)
 ap.add_argument("--voice", default="af_heart")
@@ -26,7 +27,7 @@ a = ap.parse_args()
 lines = [l.strip() for l in gzip.open(a.text, "rt", encoding="utf-8")]
 lines = [l for l in lines if 4 <= len(l.split()) <= 35]
 random.Random(0).shuffle(lines)
-lines = lines[: a.n][a.shard:: a.nshards]
+lines = lines[a.start: a.start + a.n][a.shard:: a.nshards]
 
 out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
 binp, f0p, idxp = (out / f"shard{a.shard}{ext}" for ext in (".i16.bin", ".f0n.f16.bin", ".jsonl"))

@@ -14,11 +14,16 @@ Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.
   Results: runs/voices/<voice>/summary.json, ab*_teacher_student.wav, demo1-3.wav.
   emma: decoder 30k steps done 2026-10-20 00:00 (8.6 it/s), snapshot 15k by UTMOS (pnet 4.185 vs teacher 4.394 on
   held-out rows; teacher-forced 4.18-4.21, so the decoder, not prosody, is the gap); ProsodyNet pitch err 0.22 st.
-  fenrir: ProsodyNet training (pitch err 0.71 st at 6k), decoder next. export/infer_numpy.py now feeds the speed input.
+  fenrir: done 01:18 (decoder resumed at 12k after a CUDA OOM caused by dumps sharing GPU 0): snapshot 30k; 50 unseen
+  sentences: int8 UTMOS 4.35 vs teacher 4.48, WER 2.9% vs 2.6%, 166x realtime; staged + registered.
+  emma v2 (GPU 1): 29.8k rows, 60k steps from 15k.pt, started 00:54 (7.1 it/s). bm_fable dump 01:19 on GPU 0, then af_kore.
 - [ ] Listen to runs/voices/*/ab*.wav and demo*.wav; then upload hf_stage/voices/ to HF (voices/ folder), re-upload
       hf/README.md, bump + publish 0.2.0 (gh workflow run publish.yml -f publish=true), GitHub release.
-- [ ] Constraints added mid-run by the user: GPU 0 only (GPU 1 free), >= 31 GB RAM free, <= 2-3 heavy python processes,
-      DataLoader workers <= 2 (train_tiny.py now uses 2).
+- Overnight 2026-10-20 00:25 (user via tts-fast session; logs/fable_task5.md): limits lifted, both GPUs, keep ~6 GB RAM
+  free, and PUBLISH 0.2.0 on the user's behalf once validated (tests, wheel test, HF upload + sha check, push, CI,
+  PyPI, GitHub release, fresh-venv install check). Plan: GPU 0 fenrir -> bm_fable (teacher 4.32/2.0%) -> af_kore
+  (4.51/1.4%); GPU 1 emma second try (30k sentences, 60k steps from 15k.pt, logs/voices/emma_long.sh, kept only if
+  better on the same 50 sentences). Lanes: logs/voices/lane.sh; progress in logs/voices/chain.log.
 - British G2P: src/hibari/g2p british=True (gb lexicon 1.5 MB + 3 suffix rules + oov_gb.onnx int8 0.94 MB):
   PER 0.57% / exact 85.9% on 1500 held-out sentences (US: 0.50% / 88.0%). US OOV net on British words: 15% word acc.
 - Package: hibari.voices (registry assets/voices.json, HIBARI_HOME / OS cache dir, urllib download, sha256, atomic

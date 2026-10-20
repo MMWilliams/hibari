@@ -20,5 +20,16 @@
   "bytes": 7936868,
   "sha256": "d3216db816697b0e10a8d239a97767f5483fa5b68d9edb6774836cfed641a69f",
   "british": true
+ },
+ "fenrir": {
+  "kokoro": "am_fenrir",
+  "language": "en-US",
+  "accent": "American",
+  "gender": "male",
+  "file": "am_fenrir.int8.onnx",
+  "bundled": false,
+  "bytes": 7936868,
+  "sha256": "6614ce51337d8777d1115ebc01df4df82ffbaad91869e752bbbd0d50502240f3",
+  "british": false
  }
 }

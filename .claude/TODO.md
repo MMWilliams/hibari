@@ -37,7 +37,9 @@ src/hibari/assets/hibari.onnx (int8, 7.94 MB).
       incl. onnxruntime import ~0.5 s.
 - [ ] Phase 2: native no-Python CLI/library (C/Rust) for Mac/Windows/Linux: ONNX Runtime static or own int8 kernels, real FFT;
       port tokenizer regexes, perceptron, lexicon lookup, number words, OOV net (plain transformer encoder + CTC collapse).
-      Mac build via GitHub Actions now possible (repo is up). PyPI: not published; ask first.
+      CI (.github/workflows/publish.yml) tests the wheel on Ubuntu/Windows/macOS arm64, py 3.10 + 3.13: all green 2026-10-20
+      (macOS M-series runner 65-87x, Ubuntu 90x, Windows 159x realtime 1 thread). PyPI: waiting on reese to add the pending
+      trusted publisher (hibari / MMWilliams / hibari / publish.yml / env pypi), then run the workflow with publish=true.
 - [ ] OOV net doubles letters sometimes ("hibari" -> hɪbˈɑɹɹi); samples use inline [hibari](/hibˈɑɹi/).
 
 ## Open (model)

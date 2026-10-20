@@ -25,6 +25,11 @@ src/hibari/assets/hibari.onnx (int8, 7.94 MB).
   Hugging Face maureesewilliams/hibari (ONNX int8/fp32, g2p/, safetensors checkpoints, samples/; card source in
   hf/README.md). Sentence splitter no longer breaks after titles/initials ("Dr. Smith").
 
+## Running (2026-10-20): voices + languages study
+- [ ] Fable max run (logs/fable_task5.md -> logs/fable_agent6.log): US male voice (best of am_michael/fenrir/puck) + bf_emma
+      (British G2P), each a full 7.9 MB model downloaded on first use; package 0.2.0 staged, not published until reese listens.
+      docs/LANGUAGES.md: per-language go/no-go (teacher WER, espeak-free G2P PER, size, license).
+
 ## Open (G2P)
 - [ ] Tagger: "that" DT vs IN (12/2500), "in" RP vs IN (8), "I object" (VBP vs NN); 2.2 MB unpruned -> 1.24 MB pruned at |w|>=1.5
       (97.46%); prune 2.5 gives 0.69 MB / 38 ms load at 97.1% if size matters more.

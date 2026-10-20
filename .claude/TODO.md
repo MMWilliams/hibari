@@ -2,10 +2,10 @@
 
 Goal: Kokoro-82M distilled into single-voice students that are smaller and faster than Paradee-8M and as close to
 the teacher as possible, for weak Mac/Windows CPUs. Product name: **hibari** (skylark). 0.1.0 is public (GitHub
-MMWilliams/hibari, PyPI hibari-tts, HF maureesewilliams/hibari). 0.2.0 (voices) is built but NOT published.
+MMWilliams/hibari, PyPI hibari-tts, HF maureesewilliams/hibari). 0.2.0 (five voices) published 2026-10-20 05:45.
 Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.68M); 7.94 MB int8 ONNX per voice.
 
-## 0.2.0 in progress (2026-10-20): more voices + British G2P + language study
+## 0.2.0 published 2026-10-20 (PyPI hibari-tts 0.2.0, GitHub release v0.2.0, HF voices/ + samples/): voices + British G2P + language study
 - Voices: heart (af_heart, in the wheel), fenrir (am_fenrir, best US male by teacher UTMOS/WER), emma (bf_emma).
   Each voice = own decoder + ProsodyNet fine-tuned from heart's weights on a 15k-sentence teacher dump
   (data/dist_<voice>, 4.7 GB each): training/train_tiny.py --init 40k.pt --init-disc last.pt, train_prosody.py --init.
@@ -23,8 +23,8 @@ Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.
   kore (af_kore): done 04:09, snapshot 25k; 50 unseen: int8 4.46 / 2.5% vs teacher 4.52 / 2.4%, 170x; staged + registered.
   fable (bm_fable): int8 4.17 / 2.6% vs teacher 4.33 / 2.6%, 167x. All four pass the gate (WER within 0.5, parity, demos).
 - Publish status 2026-10-20 05:25: HF voices/ + samples/ + README uploaded and verified by anonymous download (sha256 OK);
-  10 commits pushed to GitHub, CI green on all 6 jobs; tests 57 pass, wheel test pass. 05:40: publish workflow
-  dispatched (gh workflow run publish.yml -f publish=true), then PyPI check, GitHub release v0.2.0, scripts/check_release.sh.
+  CI green on all 6 jobs; tests 57 pass, wheel test pass; publish workflow green (PyPI 0.2.0 at 05:42); GitHub release
+  v0.2.0 with the PyPI wheel; scripts/check_release.sh 0.2.0 OK (fresh venv, all voices downloaded, Dr. Smith + date read right).
 - [ ] User: listen to runs/voices/*/ab*.wav and demo*.wav in the morning and give feedback.
 - Overnight 2026-10-20 00:25 (user via tts-fast session; logs/fable_task5.md): limits lifted, both GPUs, keep ~6 GB RAM
   free, and PUBLISH 0.2.0 on the user's behalf once validated (tests, wheel test, HF upload + sha check, push, CI,

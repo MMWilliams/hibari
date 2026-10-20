@@ -136,7 +136,7 @@ Per voice (same protocol, 50 unseen sentences each, student fed the teacher's ph
 |---|---|---|---|---|---|---|
 | heart | af_heart (American female) | 4.52 / 2.8% | 4.43 / 2.7% | 0.09 | 128 | 7.94 |
 | emma | bf_emma (British female) | 4.40 / 2.9% | 4.16 / 2.6% | 0.24 | 139 | 7.94 |
-| fenrir | am_fenrir (American male) | 4.48 / 2.6% | 4.35 / 2.9% | 0.13 | 166 | 7.94 |
+| fenrir | am_fenrir (American male) | 4.48 / 2.6% | 4.39 / 2.4% | 0.09 | 171 | 8.03 |
 | fable | bm_fable (British male) | 4.33 / 2.6% | 4.17 / 2.6% | 0.16 | 167 | 7.94 |
 | kore | af_kore (American female) | 4.52 / 2.4% | 4.45 / 2.5% | 0.06 | 170 | 7.94 |
 

@@ -32,8 +32,8 @@ Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.
   emma v2 per-channel 4.132, fable v2 4.150: below shipped per-channel (4.173 / 4.160). Lever 1 full runs lose on all three.
 - Result: 0.2.1 = fenrir re-exported per-channel only (am_fenrir_v2.int8.onnx staged, registry points to it); emma and fable
   unchanged. Retraining the decoder with these levers does not close the gap; next idea would need a new approach.
-- [ ] reese listens to runs/voices/am_fenrir_pc/ab*_teacher_shipped_improved.wav, then: upload hf_stage/voices_v2 to HF
-      voices/, push, gh workflow run publish.yml -f publish=true, release v0.2.1. API credits low (2026-10-20): no Fable runs.
+- 0.2.1 PUBLISHED 2026-10-20 (reese OK by ear): HF voices/am_fenrir_v2 (sha verified), PyPI, GitHub release v0.2.1;
+  fresh PyPI install downloads fenrir v2, ~190x. API credits low: no Fable runs until reese says.
       wavs only (scripts/ab_v2.py --no-demos) for the user's ear.
 - [ ] Then: voice_table.py --write, VOICE_GAP/METRICS/MODEL_CARD rows, TODO, commit (0.2.1 stays unreleased).
 - Second metric for the report: scripts/mcd_eval.py (DTW MCD on the 50 unseen sentences): heart 12.44, kore 10.54,

@@ -78,7 +78,20 @@ atomically. The cache directory is `HIBARI_HOME` if set, else `%LOCALAPPDATA%\hi
 without the file, `Hibari(voice=...)` raises a RuntimeError that names the URL and the path to copy the file
 to by hand. British voices use the British spelling-to-sound rules (misaki's gb lexicon and a British
 out-of-vocabulary net, 2.4 MB in the wheel); the text normalizer is shared (dates are read US style).
-Per-voice quality numbers are in MODEL_CARD.md.
+Quality per voice on 50 unseen sentences (the student reads the teacher's phonemes, so this measures the
+acoustic model alone; UTMOS = utmos22_strong, WER = Whisper base; one onnxruntime thread, the machine shared with
+training jobs during the voice runs; `scripts/eval_voice.py`):
+
+<!-- voices-table -->
+| voice | Kokoro voice | teacher UTMOS / WER | hibari int8 UTMOS / WER | UTMOS gap | x realtime (1 thread) | file MB |
+|---|---|---|---|---|---|---|
+| heart | af_heart (American female) | 4.52 / 2.8% | 4.43 / 2.7% | 0.09 | 128 | 7.94 |
+| emma | bf_emma (British female) | 4.40 / 2.8% | 4.14 / 2.7% | 0.26 | 184 | 7.94 |
+| fenrir | am_fenrir (American male) | 4.48 / 2.6% | 4.35 / 2.9% | 0.13 | 166 | 7.94 |
+
+- emma: snapshot 15k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.394; 10k 4.134, 15k 4.185, 20k 4.164, 25k 4.171, 30k 4.171).
+- fenrir: snapshot 30k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.496; 10k 4.382, 15k 4.400, 20k 4.397, 25k 4.403, 30k 4.414).
+<!-- /voices-table -->
 
 ## Text to phonemes
 

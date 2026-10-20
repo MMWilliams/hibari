@@ -69,6 +69,20 @@ word error rate of Whisper base transcripts, one onnxruntime thread. Full sheet:
 | Paradee-8M int8 | 9.04 | 18 | 4.41 | 2.8% |
 | hibari int8 | 7.94 | 128 | 4.43 | 2.7% |
 
+Per voice, same protocol (50 unseen sentences each, the student fed the teacher's phonemes, one onnxruntime
+thread; the fenrir, emma, fable and kore runs timed while other jobs shared the machine):
+
+<!-- voices-table -->
+| voice | Kokoro voice | teacher UTMOS / WER | hibari int8 UTMOS / WER | UTMOS gap | x realtime (1 thread) | file MB |
+|---|---|---|---|---|---|---|
+| heart | af_heart (American female) | 4.52 / 2.8% | 4.43 / 2.7% | 0.09 | 128 | 7.94 |
+| emma | bf_emma (British female) | 4.40 / 2.8% | 4.14 / 2.7% | 0.26 | 184 | 7.94 |
+| fenrir | am_fenrir (American male) | 4.48 / 2.6% | 4.35 / 2.9% | 0.13 | 166 | 7.94 |
+
+- emma: snapshot 15k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.394; 10k 4.134, 15k 4.185, 20k 4.164, 25k 4.171, 30k 4.171).
+- fenrir: snapshot 30k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.496; 10k 4.382, 15k 4.400, 20k 4.397, 25k 4.403, 30k 4.414).
+<!-- /voices-table -->
+
 Grapheme-to-phoneme: see README (G2P section) for phoneme error rate and exact match against the
 reference pipeline, and for the end-to-end UTMOS / WER with hibari's G2P versus the reference G2P feeding
 the same model.

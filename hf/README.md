@@ -117,6 +117,19 @@ Whisper base transcripts; speed on one onnxruntime thread, Ryzen 9 9900X.
 | Kokoro-7M-Distill | 7.48 M | 30.1 | 17.4 | 108 / 357 ms | 889 | | |
 | Kokoro-82M (teacher) | 81.8 M | 327 | 1.9 | 739 / 3880 ms | 1527 | 4.52 | 2.8% |
 
+Per voice (same protocol, 50 unseen sentences each, student fed the teacher's phonemes, one thread):
+
+<!-- voices-table -->
+| voice | Kokoro voice | teacher UTMOS / WER | hibari int8 UTMOS / WER | UTMOS gap | x realtime (1 thread) | file MB |
+|---|---|---|---|---|---|---|
+| heart | af_heart (American female) | 4.52 / 2.8% | 4.43 / 2.7% | 0.09 | 128 | 7.94 |
+| emma | bf_emma (British female) | 4.40 / 2.8% | 4.14 / 2.7% | 0.26 | 184 | 7.94 |
+| fenrir | am_fenrir (American male) | 4.48 / 2.6% | 4.35 / 2.9% | 0.13 | 166 | 7.94 |
+
+- emma: snapshot 15k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.394; 10k 4.134, 15k 4.185, 20k 4.164, 25k 4.171, 30k 4.171).
+- fenrir: snapshot 30k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.496; 10k 4.382, 15k 4.400, 20k 4.397, 25k 4.403, 30k 4.414).
+<!-- /voices-table -->
+
 Text to phonemes, against the reference pipeline (misaki 0.9.4 + spaCy + espeak-ng) on 2,500 held-out
 sentences: 0.50% phoneme error rate, 88% of sentences identical (95% for sentences with no out-of-vocabulary
 word). Feeding the same model from hibari's G2P versus the reference G2P on 50 unseen sentences: UTMOS

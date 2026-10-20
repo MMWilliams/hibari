@@ -27,3 +27,23 @@ g2p_work/eval.jsonl (160.5 s of audio, 8 s average), best of 3 rounds per senten
 Same wheel in WSL Ubuntu-22.04 (python 3.10, onnxruntime 1.23.2, `hibari --bench`, 3 sentences / 15.6 s): 210x / 298x.
 Load: imports (numpy, onnxruntime) 0.21 s, model session 0.16 s, G2P 0.31 s (lexicon 73 ms, tagger 95 ms, OOV net 25 ms).
 The longer sentences here amortize the fixed per-call cost better than the 20-sentence mix above (128x), and the machine was quieter.
+
+## Voices (2026-10-20, scripts/eval_voice.py)
+Each voice is its own decoder + ProsodyNet with heart's architecture; fenrir, emma, fable and kore were fine-tuned from
+heart's weights (training/train_tiny.py --init runs/tiny_v3/snap/40k.pt --init-disc runs/tiny_v3/last.pt, 30k steps at
+lr 1e-4, and train_prosody.py --init runs/prosody_v1/best.pt, 20k steps) on a 15k-sentence teacher dump of that voice
+(emma's second run: 30k sentences, 60k steps). 50 unseen sentences (corpus lines[30000:], never synthesized for any
+voice's training), the student fed the teacher's phoneme ids; UTMOS utmos22_strong, WER Whisper base; speed = audio
+seconds / wall seconds on one onnxruntime thread with the numpy DSP, measured while training jobs shared the machine
+(so the heart row, measured earlier on a quieter mix of short and long sentences, is not directly comparable).
+
+<!-- voices-table -->
+| voice | Kokoro voice | teacher UTMOS / WER | hibari int8 UTMOS / WER | UTMOS gap | x realtime (1 thread) | file MB |
+|---|---|---|---|---|---|---|
+| heart | af_heart (American female) | 4.52 / 2.8% | 4.43 / 2.7% | 0.09 | 128 | 7.94 |
+| emma | bf_emma (British female) | 4.40 / 2.8% | 4.14 / 2.7% | 0.26 | 184 | 7.94 |
+| fenrir | am_fenrir (American male) | 4.48 / 2.6% | 4.35 / 2.9% | 0.13 | 166 | 7.94 |
+
+- emma: snapshot 15k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.394; 10k 4.134, 15k 4.185, 20k 4.164, 25k 4.171, 30k 4.171).
+- fenrir: snapshot 30k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.496; 10k 4.382, 15k 4.400, 20k 4.397, 25k 4.403, 30k 4.414).
+<!-- /voices-table -->

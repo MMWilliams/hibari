@@ -17,6 +17,8 @@ Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.
 - Lever 3 done: fresh discriminators: MCD 9.54 -> 8.22 (all 50 better) but UTMOS -0.05/-0.07: UTMOS wants MORE
   adversarial pull, not less. train_tiny.py --gan-w added.
 - Lever 4 done: --gan-w 2: UTMOS -0.04/-0.01, MCD +1.2: no. Shipped loss balance is the best point.
+- Export finding: per-channel int8 (quantize_dynamic per_channel=True) on the shipped fenrir: UTMOS 4.385 vs 4.349
+  (fp32 4.380), WER 2.4 % vs 2.9 %, 171x, 8.03 MB (+0.09): recovers the whole int8 loss. Testing on emma/fable.
 - [ ] Capacity probe running (runs/exp/emma_cap12, 12 blocks, report only); then logs/voices/full.sh "--lin-w 20 --hi-w 0.25"
       bf_emma bm_fable am_fenrir (30k steps each, post_voice --no-stage, MCD) -> runs/voices/<v>_v2, export/<v>_v2.
 - [ ] Then: capacity probe, 12 decoder blocks (dec.8-11 start near identity from heart's init), 10k steps, report only.

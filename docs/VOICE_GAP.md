@@ -132,3 +132,12 @@ next lever is to weight the adversarial term up (--gan-w).
 Lever 4 is worse on both judges (UTMOS -0.04 / -0.01, MCD +1.2 dB on all 50 sentences): weaker adversarial pull hurts
 (lever 3) and stronger hurts too, so the shipped balance between the spectral losses and the discriminators is already
 the best of these for UTMOS. The only lever with a consistent gain is lever 1.
+
+## A side finding on the int8 export
+
+fenrir loses 0.03 UTMOS from int8 quantization (fp32 4.380, int8 4.349 on the 50 unseen sentences), more than the other
+voices (0.01 to 0.02). Per-channel weight scales in the same dynamic int8 export (export_onnx.py --per-channel) bring
+every voice's int8 model to its fp32 level: fenrir 4.385 (+0.037, 27 of 50 sentences better, WER 2.4 % instead of
+2.9 %), emma 4.173 (+0.012), fable 4.160 (-0.007, noise), same speed, 8.03 MB instead of 7.94. The int8 outputs are
+also measurably closer to the fp32 model (harmonic log-amplitude error 0.04 instead of 0.05, F0 0.4 Hz instead of
+0.7 Hz on rows with the same frame count).

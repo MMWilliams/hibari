@@ -95,6 +95,8 @@ def main():
     ap.add_argument("--ckpt", default="runs/tiny_v1/last.pt")
     ap.add_argument("--out", default="export/tiny.onnx")
     ap.add_argument("--prosody", help="ProsodyNet ckpt: its durations and F0/energy replace TinyKokoro's heads")
+    ap.add_argument("--per-channel", action="store_true", help="per-channel int8 weight scales (+0.09 MB; closer to fp32: "
+                    "fenrir UTMOS 4.385 vs 4.349 per-tensor, fp32 4.380)")
     a = ap.parse_args()
     c = torch.load(a.ckpt, map_location="cpu", weights_only=False)
     model = TinyKokoro(**c.get("kw", {})).eval()
@@ -121,7 +123,7 @@ def main():
     fold_weight_transposes(a.out)
     q = a.out.replace(".onnx", ".int8.onnx")
     # MatMul only: ConvInteger ran slower than fp32 Conv on x86, and convs are 15% of the weights
-    quantize_dynamic(a.out, q, weight_type=QuantType.QInt8, op_types_to_quantize=["MatMul"])
+    quantize_dynamic(a.out, q, weight_type=QuantType.QInt8, op_types_to_quantize=["MatMul"], per_channel=a.per_channel)
     try:
         from huggingface_hub import hf_hub_download
         cfg = json.load(open(hf_hub_download("hexgrad/Kokoro-82M", "config.json"), encoding="utf-8"))

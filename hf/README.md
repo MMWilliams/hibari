@@ -79,6 +79,7 @@ or study the model.
 | onnx/hibari.int8.onnx | shipping model of the heart voice, int8 MatMul weights (7.9 MB) |
 | onnx/hibari.fp32.onnx | same model in fp32 (24.8 MB) |
 | voices/am_fenrir.int8.onnx, voices/bf_emma.int8.onnx, voices/bm_fable.int8.onnx, voices/af_kore.int8.onnx | the fenrir, emma, fable and kore voices, same interface (7.9 MB each; the package downloads these, sha256 in its registry) |
+| voices/am_fenrir_v2.int8.onnx | 0.2.1's fenrir: the same model with per-channel int8 weight scales (8.0 MB), UTMOS 4.39 instead of 4.35 on the 50 unseen sentences; the 0.2.0 file stays for older registries |
 | voices/*.fp32.onnx | the same in fp32 |
 | g2p/ | text-to-phoneme data: misaki lexicons, tagger weights, tokenizer special cases, normalization tables, out-of-vocabulary net (oov.onnx), phoneme vocabulary |
 | checkpoints/decoder_v3_40k.safetensors | PyTorch weights of the decoder (TinyKokoro, kwargs in the file metadata) |

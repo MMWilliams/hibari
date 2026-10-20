@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hibari"
+name = "hibari-tts"
 version = "0.1.0"
 description = "Tiny American English text-to-speech: 7.9 MB model, about 130x realtime on one CPU core, text in, 24 kHz audio out"
 readme = "README.md"

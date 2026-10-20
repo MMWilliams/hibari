@@ -11,11 +11,11 @@ https://huggingface.co/maureesewilliams/hibari
 ## Install
 
 ```
-pip install hibari
-pip install "hibari[fast]"        # adds scipy: 2x faster signal processing
+pip install hibari-tts
+pip install "hibari-tts[fast]"      # adds scipy: 2x faster signal processing
 ```
 
-Python 3.9 or newer. Everything (model, lexicon, phonemizer) is inside the wheel, nothing is downloaded.
+The PyPI name is hibari-tts (hibari was taken); the import and the command are both `hibari`. Python 3.9 or newer. Everything (model, lexicon, phonemizer) is inside the wheel, nothing is downloaded.
 
 ## Command line
 

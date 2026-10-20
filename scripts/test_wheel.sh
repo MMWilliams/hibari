@@ -6,7 +6,7 @@ set -euo pipefail
 PY=${1:-python3}
 shift || true
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-WHL=$(ls -t "$ROOT"/dist/hibari-*.whl | head -1)
+WHL=$(ls -t "$ROOT"/dist/hibari*.whl | head -1)
 TMP=$(mktemp -d)
 echo "venv in $TMP with $($PY --version 2>&1)"
 "$PY" -m venv "$TMP/venv"

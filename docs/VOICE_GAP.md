@@ -150,3 +150,10 @@ torch benchmark: RTF 0.0159 vs 0.0110), same emma recipe, 10 k of 30 k steps: UT
 with ProsodyNet) against 4.174 / 4.134 for the shipped-size decoder at the same step, MCD 9.65 vs 9.54 dB. A gain of
 0.03, the same size as lever 1's, for half again as much decoder. Capacity is not what is missing either, or not in a
 way that 10 k steps can show.
+
+## Full run with lever 1 (emma, 30 k sentences, 30 k steps, --lin-w 20 --hi-w 0.25)
+
+Snapshot by UTMOS on held-out rows: 10 k 4.168, 15 k 4.158, 20 k 4.165, 25 k 4.166, 30 k 4.148 (flat, best at 10 k).
+On the 50 unseen sentences: int8 4.144 / WER 2.8 % / MCD 11.38 dB against the shipped emma's 4.161 / 2.6 % / 11.01 dB.
+Not better, so the shipped emma stays. The 10 k-step gain did not carry over to unseen sentences; all of these
+differences are within about 0.03, the noise of a 50-sentence UTMOS mean.

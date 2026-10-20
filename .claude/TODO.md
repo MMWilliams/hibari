@@ -20,7 +20,10 @@ Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.
 - Export finding: per-channel int8 (quantize_dynamic per_channel=True) on the shipped fenrir: UTMOS 4.385 vs 4.349
   (fp32 4.380), WER 2.4 % vs 2.9 %, 171x, 8.03 MB (+0.09): recovers the whole int8 loss. Testing on emma/fable.
 - Capacity probe done (runs/exp/emma_cap12, 12 blocks): +0.03 UTMOS at 10k, MCD +0.1, +1.6 MB, ~45 % slower: report only.
-- [ ] Full runs (armed behind the RAM gate; Unreal Editor holds 16-21 GB when open): logs/voices/full.sh "--lin-w 20 --hi-w 0.25"
+- emma v2 full run (lin-w 20, 30k sentences, 30k steps): 50 unseen int8 4.144 / 2.8 % / MCD 11.38 vs shipped 4.161 / 2.6 % /
+  11.01: NOT better, shipped emma stays (runs/voices/bf_emma_v2, export/bf_emma_v2).
+- [ ] fable v2 running (09:22-10:25), then fenrir v2; fenrir per-channel-only candidate staged from export/am_fenrir_pc.
+- [ ] Full runs script: logs/voices/full.sh "--lin-w 20 --hi-w 0.25"
       bf_emma bm_fable am_fenrir (30k steps each, post_voice --no-stage, MCD) -> runs/voices/<v>_v2, export/<v>_v2.
 - [ ] Then: capacity probe, 12 decoder blocks (dec.8-11 start near identity from heart's init), 10k steps, report only.
 - Second metric for the report: scripts/mcd_eval.py (DTW MCD on the 50 unseen sentences): heart 12.44, kore 10.54,

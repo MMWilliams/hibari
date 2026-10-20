@@ -157,3 +157,9 @@ Snapshot by UTMOS on held-out rows: 10 k 4.168, 15 k 4.158, 20 k 4.165, 25 k 4.1
 On the 50 unseen sentences: int8 4.144 / WER 2.8 % / MCD 11.38 dB against the shipped emma's 4.161 / 2.6 % / 11.01 dB.
 Not better, so the shipped emma stays. The 10 k-step gain did not carry over to unseen sentences; all of these
 differences are within about 0.03, the noise of a 50-sentence UTMOS mean.
+
+## Full run with lever 1 (fable, 15 k sentences, 30 k steps)
+
+Held-out UTMOS with ProsodyNet: 10 k 4.147, 15 k 4.157, 20 k 4.162, 25 k 4.164, 30 k 4.166 (the shipped run peaked at
+4.176). On the 50 unseen sentences: int8 4.143 / WER 2.5 % / MCD 13.00 dB against the shipped fable's 4.167 / 2.6 % /
+13.04 dB. Not better; the shipped fable stays.

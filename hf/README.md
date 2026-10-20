@@ -123,11 +123,13 @@ Per voice (same protocol, 50 unseen sentences each, student fed the teacher's ph
 | voice | Kokoro voice | teacher UTMOS / WER | hibari int8 UTMOS / WER | UTMOS gap | x realtime (1 thread) | file MB |
 |---|---|---|---|---|---|---|
 | heart | af_heart (American female) | 4.52 / 2.8% | 4.43 / 2.7% | 0.09 | 128 | 7.94 |
-| emma | bf_emma (British female) | 4.40 / 2.8% | 4.14 / 2.7% | 0.26 | 184 | 7.94 |
+| emma | bf_emma (British female) | 4.40 / 2.9% | 4.16 / 2.6% | 0.24 | 139 | 7.94 |
 | fenrir | am_fenrir (American male) | 4.48 / 2.6% | 4.35 / 2.9% | 0.13 | 166 | 7.94 |
+| fable | bm_fable (British male) | 4.33 / 2.6% | 4.17 / 2.6% | 0.16 | 167 | 7.94 |
 
-- emma: snapshot 15k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.394; 10k 4.134, 15k 4.185, 20k 4.164, 25k 4.171, 30k 4.171).
+- emma: snapshot 40k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.394; 20k 4.107, 30k 4.125, 40k 4.174, 50k 4.174, 60k 4.173).
 - fenrir: snapshot 30k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.496; 10k 4.382, 15k 4.400, 20k 4.397, 25k 4.403, 30k 4.414).
+- fable: snapshot 25k picked by UTMOS with the voice's ProsodyNet on 50 held-out training rows (teacher 4.333; 10k 4.143, 15k 4.167, 20k 4.151, 25k 4.176, 30k 4.161).
 <!-- /voices-table -->
 
 Text to phonemes, against the reference pipeline (misaki 0.9.4 + spaCy + espeak-ng) on 2,500 held-out

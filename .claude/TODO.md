@@ -16,7 +16,9 @@ Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.
   held-out rows; teacher-forced 4.18-4.21, so the decoder, not prosody, is the gap); ProsodyNet pitch err 0.22 st.
   fenrir: done 01:18 (decoder resumed at 12k after a CUDA OOM caused by dumps sharing GPU 0): snapshot 30k; 50 unseen
   sentences: int8 UTMOS 4.35 vs teacher 4.48, WER 2.9% vs 2.6%, 166x realtime; staged + registered.
-  emma v2 (GPU 1): 29.8k rows, 60k steps from 15k.pt, started 00:54, done ~03:17 then post (no-stage) -> compare.
+  emma v2 (GPU 1, 29.8k rows, 60k steps from 15k.pt): snapshot 40k; 50 unseen: int8 4.16 / 2.6% vs v1 4.14 / 2.7% ->
+  kept (runs/voices/bf_emma = v2, bf_emma_v1 = first run; export/bf_emma = v2). emma v3s experiment on GPU 1 from 03:27:
+  heart's third stage redone on emma data (init runs/tiny_v2/snap/60k.pt, 60k steps, lr 2e-4); cut if not evaluated by 06:00.
   fable (bm_fable): done 02:54, snapshot 25k, staged + registered (numbers in runs/voices/bm_fable/summary.json).
   kore (af_kore): training on GPU 0 from 02:56 (logs/voices/gpu0b.sh), expected done ~04:20.
 - [ ] Listen to runs/voices/*/ab*.wav and demo*.wav; then upload hf_stage/voices/ to HF (voices/ folder), re-upload

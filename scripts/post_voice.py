@@ -20,7 +20,7 @@ a = ap.parse_args()
 v, run = a.kokoro, a.run or f"runs/voices/{a.kokoro}"
 exp = a.export or f"export/{v}"
 pn = a.prosody or f"{run}/prosody/best.pt"
-env = {**os.environ, "PYTHONIOENCODING": "utf-8", "CUDA_VISIBLE_DEVICES": "0"}
+env = {**os.environ, "PYTHONIOENCODING": "utf-8", "CUDA_VISIBLE_DEVICES": os.environ.get("CUDA_VISIBLE_DEVICES", "0")}
 
 
 def sh(*cmd):

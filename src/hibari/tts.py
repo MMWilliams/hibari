@@ -16,6 +16,18 @@ SAMPLE_RATE = dsp.SR
 MAX_PHONEMES = 400                     # sentences longer than this are split at clause punctuation
 _SENT_END = re.compile(r'(?<=[.!?…])["”’)\]]*\s+(?=\S)')
 _CLAUSE = re.compile(r"(?<=[,;:—])\s+")
+with open(os.path.join(ASSETS, "normalize.json"), encoding="utf-8") as _f:
+    _TITLES = set(json.load(_f)["titles"])
+
+
+def _ends_sentence(para, end, nxt):
+    """False for a period after a title or an initial ("Dr. Smith", "J. K. Rowling") or before a lowercase word."""
+    if nxt.islower():
+        return False
+    if para[end - 1] != ".":
+        return True
+    word = para[para.rfind(" ", 0, end) + 1: end - 1].lstrip("(\"“'‘")
+    return not (word in _TITLES or (len(word) == 1 and word.isupper()))
 
 
 class Hibari:
@@ -50,10 +62,13 @@ class Hibari:
         """Sentences (paragraph breaks and end punctuation), each a string the model sees at once."""
         out = []
         for para in re.split(r"\n\s*\n|\n", text.strip()):
-            para = para.strip()
-            if para:
-                out += [s for s in _SENT_END.split(para) if s.strip()]
-        return out
+            para, cut = para.strip(), 0
+            for m in _SENT_END.finditer(para):
+                if _ends_sentence(para, m.start(), para[m.end()]):
+                    out.append(para[cut:m.start()])
+                    cut = m.end()
+            out.append(para[cut:])
+        return [s for s in out if s.strip()]
 
     def phonemize(self, text):
         """Phoneme strings, one per sentence, in the model's alphabet (misaki conventions)."""

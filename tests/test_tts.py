@@ -38,6 +38,11 @@ def test_stream_matches_call(tts):
     assert np.array_equal(np.concatenate(chunks), tts(text, seed=0))
 
 
+def test_split_sentences_keeps_titles_and_initials():
+    assert Hibari.split_sentences("Dr. Smith met J. K. Rowling at 5 p.m. today. She said \"Hi.\" Then left!") == [
+        "Dr. Smith met J. K. Rowling at 5 p.m. today.", "She said \"Hi.", "Then left!"]
+
+
 def test_phonemize_and_from_phonemes(tts):
     ps = tts.phonemize("Hello there.")
     assert ps == ["həlˈO ðˈɛɹ."]

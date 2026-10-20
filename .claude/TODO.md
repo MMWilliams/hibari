@@ -21,6 +21,9 @@ src/hibari/assets/hibari.onnx (int8, 7.94 MB).
 - Docs: README.md (users/developers/researchers, ONNX I/O spec, reproduce commands), MODEL_CARD.md, LICENSE (Apache-2.0),
   NOTICE (Kokoro-82M, misaki, spaCy, espeak-ng data provenance, StyleTTS2 MIT, num2words).
 - Research data for the G2P lives in g2p_work/ (gitignored, ~1 GB): dump_misaki.py reference dumps, espeak labels, trainings.
+- Published 2026-10-19 (reese's go): GitHub MMWilliams/hibari (public, master) + release v0.1.0 with the wheel;
+  Hugging Face maureesewilliams/hibari (ONNX int8/fp32, g2p/, safetensors checkpoints, samples/; card source in
+  hf/README.md). Sentence splitter no longer breaks after titles/initials ("Dr. Smith").
 
 ## Open (G2P)
 - [ ] Tagger: "that" DT vs IN (12/2500), "in" RP vs IN (8), "I object" (VBP vs NN); 2.2 MB unpruned -> 1.24 MB pruned at |w|>=1.5
@@ -34,7 +37,8 @@ src/hibari/assets/hibari.onnx (int8, 7.94 MB).
       incl. onnxruntime import ~0.5 s.
 - [ ] Phase 2: native no-Python CLI/library (C/Rust) for Mac/Windows/Linux: ONNX Runtime static or own int8 kernels, real FFT;
       port tokenizer regexes, perceptron, lexicon lookup, number words, OOV net (plain transformer encoder + CTC collapse).
-      CI workflow ready; Mac build needs GitHub. Publishing (GitHub/PyPI/HF): local only until reese says.
+      Mac build via GitHub Actions now possible (repo is up). PyPI: not published; ask first.
+- [ ] OOV net doubles letters sometimes ("hibari" -> hɪbˈɑɹɹi); samples use inline [hibari](/hibˈɑɹi/).
 
 ## Open (model)
 - [ ] Re-run `python scripts/bench_all.py` on a quiet machine (Paradee did 22-24x when quiet).

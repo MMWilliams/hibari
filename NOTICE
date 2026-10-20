@@ -10,6 +10,13 @@ Kokoro-82M (https://huggingface.co/hexgrad/Kokoro-82M), by hexgrad, Apache-2.0.
   durations, pitch and energy targets were synthesized by Kokoro-82M. The phoneme vocabulary
   (assets/vocab.json) is Kokoro's.
 
+kokoro (https://github.com/hexgrad/kokoro), by hexgrad, Apache-2.0.
+  kokoro_patched/ in the research repository is a copy of the kokoro inference package, modified to
+  return the teacher's durations, F0 and energy for distillation. Not part of the hibari package.
+
+Training text: agentlans/high-quality-english-sentences
+  (https://huggingface.co/datasets/agentlans/high-quality-english-sentences). Not redistributed.
+
 misaki (https://github.com/hexgrad/misaki), by hexgrad, Apache-2.0.
   assets/lexicon_us_gold.json.gz and assets/lexicon_us_silver.json.gz are misaki 0.9.4's
   us_gold.json and us_silver.json, unchanged apart from compression. hibari/g2p/lexicon.py and

@@ -5,13 +5,14 @@ Tiny American English text-to-speech. One 7.9 MB model, about 130x realtime on a
 Linux, x64 and arm64. Distilled from Kokoro-82M (voice af_heart), it scores UTMOS 4.43 against the teacher's
 4.52 while running 65x faster.
 
-hibari is Japanese for skylark.
+hibari is Japanese for skylark. Model files, checkpoints and audio samples:
+https://huggingface.co/maureesewilliams/hibari
 
 ## Install
 
 ```
-pip install hibari-0.1.0-py3-none-any.whl        # local wheel (not on PyPI yet)
-pip install "hibari[fast]"                        # adds scipy: 2x faster signal processing
+pip install https://github.com/MMWilliams/hibari/releases/download/v0.1.0/hibari-0.1.0-py3-none-any.whl
+pip install "hibari[fast] @ https://github.com/MMWilliams/hibari/releases/download/v0.1.0/hibari-0.1.0-py3-none-any.whl"   # adds scipy: 2x faster signal processing
 ```
 
 Python 3.9 or newer. Everything (model, lexicon, phonemizer) is inside the wheel, nothing is downloaded.
@@ -131,15 +132,21 @@ and energy and the decoder in one graph. Metrics and conditions: `docs/METRICS.m
 Reproduce (research environment: `.venv` with torch, kokoro, misaki, spaCy, espeak-ng; GPU):
 
 ```
-# 1. teacher dump: 30k sentences through Kokoro-82M with durations, F0, energy  (data/dist)
-python training/dump_teacher.py --n 30000 --shard 0 --nshards 1
-# 2. decoder (TinyKokoro v3), 60k steps, pick the 40k snapshot by UTMOS
-python training/train_tiny.py --config configs/v3.json --out runs/tiny_v3
+# 0. text corpus (agentlans/high-quality-english-sentences on Hugging Face)
+curl -L -o data/sentences.txt.gz https://huggingface.co/datasets/agentlans/high-quality-english-sentences/resolve/main/train.txt.gz
+# 1. teacher dump: 30k sentences through Kokoro-82M with durations, F0, energy  (data/dist; one process per shard)
+python training/dump_teacher.py --n 30000 --shard 0 --nshards 3   # and --shard 1, --shard 2
+# 2. decoder in three stages, each starting from the previous one's 60k snapshot (snapshots every 10k)
+python training/train_tiny.py --out runs/tiny_v1
+python training/train_tiny.py --out runs/tiny_v2 --steps 100000 --model '{"c_dec":256,"dec_blocks":8,"dec_ff":768}' --init runs/tiny_v1/snap/60k.pt
+python training/train_tiny.py --out runs/tiny_v3 --steps 60000 --model '{"c_dec":256,"dec_blocks":8,"dec_ff":768,"src":true}' --init runs/tiny_v2/snap/60k.pt
+#    after step 3, pick the v3 snapshot by UTMOS with ProsodyNet (40k won): scripts/diagnose_gap.py 30k 40k 50k 60k --run runs/tiny_v3 --prosody runs/prosody_v1/best.pt
 # 3. ProsodyNet on whole sentences (18 min on one GPU)
 python training/train_prosody.py --out runs/prosody_v1
 # 4. export: one graph with a speed input, fp32 + int8, parity check against torch
 python export/export_onnx.py --ckpt runs/tiny_v3/snap/40k.pt --prosody runs/prosody_v1/best.pt --out export/v3_speed/tiny.onnx
 # 5. evaluation: head to head on unseen sentences (UTMOS, Whisper WER), size and speed sheet
+#    (Paradee-8M ONNX in upstream/paradee/onnx, Kokoro-7M-Distill in upstream/kokoro-7m, downloaded separately)
 python scripts/compare_paradee.py --tiny export/v3_speed --n 50
 python scripts/bench_all.py
 # 6. G2P: reference dump, tagger, OOV net, evaluation

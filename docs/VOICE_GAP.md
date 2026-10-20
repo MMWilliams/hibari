@@ -141,3 +141,12 @@ every voice's int8 model to its fp32 level: fenrir 4.385 (+0.037, 27 of 50 sente
 2.9 %), emma 4.173 (+0.012), fable 4.160 (-0.007, noise), same speed, 8.03 MB instead of 7.94. The int8 outputs are
 also measurably closer to the fp32 model (harmonic log-amplitude error 0.04 instead of 0.05, F0 0.4 Hz instead of
 0.7 Hz on rows with the same frame count).
+
+## Capacity probe (report only, not shipped)
+
+A decoder with 12 ConvNeXt blocks instead of 8 (the four new blocks start near identity, everything else from heart's
+weights; 6.24 M parameters instead of 4.65 M, about 1.6 MB more on disk and about 45 % slower on one CPU thread in the
+torch benchmark: RTF 0.0159 vs 0.0110), same emma recipe, 10 k of 30 k steps: UTMOS 4.202 / 4.162 (teacher-forced /
+with ProsodyNet) against 4.174 / 4.134 for the shipped-size decoder at the same step, MCD 9.65 vs 9.54 dB. A gain of
+0.03, the same size as lever 1's, for half again as much decoder. Capacity is not what is missing either, or not in a
+way that 10 k steps can show.

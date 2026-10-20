@@ -127,3 +127,8 @@ much more closely (MCD 9.54 to 8.22 dB, better on all 50 sentences, mel loss 0.3
 0.07 (worse on 36 of 50 sentences). The two judges pull in opposite directions, and the thing UTMOS rewards is the
 texture the adversarial term produces. Heart's discriminators, trained for 60 k steps, are an asset, and the natural
 next lever is to weight the adversarial term up (--gan-w).
+| lever 4: adversarial term weighted x2 with heart's discriminators (--gan-w 2), 10 k | 4.135 | 4.122 | 10.77 |
+
+Lever 4 is worse on both judges (UTMOS -0.04 / -0.01, MCD +1.2 dB on all 50 sentences): weaker adversarial pull hurts
+(lever 3) and stronger hurts too, so the shipped balance between the spectral losses and the discriminators is already
+the best of these for UTMOS. The only lever with a consistent gain is lever 1.

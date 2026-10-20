@@ -112,3 +112,18 @@ Results of the lever experiments: see the end of this file.
 
 Lever 1 improves the second metric (MCD 9.54 to 9.34 dB) and UTMOS by 0.01 to 0.04, which is within the noise of 50
 rows and far from the 0.22 gap. Kept as a candidate for the full run only if nothing better turns up.
+| lever 2: penalty on the free-phase branch's share of voiced energy below 4 kHz (--free-w 10), 10 k | 4.183 | 4.163 | 9.67 |
+
+Lever 2 did what it was meant to do (free-phase share of the voiced 1 to 4 kHz energy down from 37 % to 19 %, pulse
+branch up to 80 %, noise branch awake at 1 %) and it changed nothing: UTMOS +0.01 / +0.03 (27 of 50 sentences better,
+a coin flip), MCD worse by 0.14 dB on 41 of 50 sentences. So where the voiced harmonics come from is not what UTMOS
+objects to. Also checked: the gap is not in the frames of British phoneme tokens that heart never saw ('ː', 'a', 'ɒ',
+'Q': 6.5 % of emma's and fable's frames; splicing the teacher's frames for them helps exactly as little as splicing
+the same amount of ordinary frames).
+| lever 3: fresh discriminators (no --init-disc, 2 k warm-up), 10 k | 4.106 | 4.086 | 8.22 |
+
+Lever 3 is the most informative miss: with weak, freshly started discriminators the decoder follows the spectral losses
+much more closely (MCD 9.54 to 8.22 dB, better on all 50 sentences, mel loss 0.30 to 0.27) and UTMOS falls by 0.05 to
+0.07 (worse on 36 of 50 sentences). The two judges pull in opposite directions, and the thing UTMOS rewards is the
+texture the adversarial term produces. Heart's discriminators, trained for 60 k steps, are an asset, and the natural
+next lever is to weight the adversarial term up (--gan-w).

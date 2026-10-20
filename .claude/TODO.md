@@ -12,7 +12,12 @@ Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.
   carries unvoiced sounds and 23-38 % of voiced 1-4 kHz energy with structured phases (random phases cost 0.1-0.6 UTMOS).
 - Lever 1 done: linear-frequency log-STFT L1 (--lin-w 20 --hi-w 0.25), emma 10k of 30k: teacher-forced 4.184 vs 4.174,
   pnet 4.170 vs 4.134, MCD 9.34 vs 9.54 (runs/exp/emma_lin20, scores in runs/exp/gap/results.json): small, within noise.
-- [ ] Lever 2 (running 06:52-07:13): free-branch share penalty (--free-w 10, voiced < 4 kHz), runs/exp/emma_free10.
+- Lever 2 done: free-branch share penalty (--free-w 10): share 37 % -> 19 % but UTMOS flat (+0.01/+0.03), MCD worse: no.
+  British-only tokens (6.5 % of frames) are not where the gap is (splice test with control).
+- Lever 3 done: fresh discriminators: MCD 9.54 -> 8.22 (all 50 better) but UTMOS -0.05/-0.07: UTMOS wants MORE
+  adversarial pull, not less. train_tiny.py --gan-w added.
+- [ ] Lever 4 (running 07:55-08:17): --gan-w 2 with heart's discriminators, runs/exp/emma_gan2.
+- [ ] Then: capacity probe, 12 decoder blocks (dec.8-11 start near identity from heart's init), 10k steps, report only.
 - Second metric for the report: scripts/mcd_eval.py (DTW MCD on the 50 unseen sentences): heart 12.44, kore 10.54,
   fenrir 10.97, fable 13.04, emma 11.01 (v1 11.39, v3s 10.72): MCD does not track UTMOS. logs/voices/cand.sh resumes a
   candidate to 30k and runs post_voice.py --no-stage.

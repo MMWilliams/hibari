@@ -130,6 +130,8 @@ def main():
     ap.add_argument("--free-w", type=float, default=0.0, help="penalty on the free-phase branch's energy share in voiced "
                     "frames below --free-hz (pushes harmonics into the pulse branch, aperiodic energy into the noise branch)")
     ap.add_argument("--free-hz", type=float, default=4000.0)
+    ap.add_argument("--gan-w", type=float, default=1.0, help="weight of the adversarial + feature-matching term (fresh "
+                    "discriminators improved MCD and hurt UTMOS: UTMOS wants more adversarial pull, not less)")
     a = ap.parse_args()
 
     dev = "cuda"
@@ -275,7 +277,7 @@ def main():
                 l_g = torch.zeros((), device=dev)
             l_lin = lin_loss(y_hat, y) if lin_loss is not None else torch.zeros((), device=dev)
             loss = (a.mel_w * l_mel + a.stft_w * l_stft + a.sil_w * l_sil + a.dur_w * l_dur
-                    + a.pro_w * l_pro + l_g + a.lin_w * l_lin + a.free_w * l_free)
+                    + a.pro_w * l_pro + a.gan_w * l_g + a.lin_w * l_lin + a.free_w * l_free)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             opt_g.step(); sch_g.step(); sch_d.step()

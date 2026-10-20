@@ -3,7 +3,7 @@ so it takes minutes per thousand steps instead of the decoder's hours.
 
     python training/train_prosody.py --out runs/prosody_v1 --baseline runs/tiny_v3/snap/20k.pt
 """
-import argparse, glob, json, random, time
+import argparse, os, glob, json, random, time
 from pathlib import Path
 import numpy as np, torch
 from torch.utils.data import Dataset, DataLoader
@@ -88,6 +88,8 @@ def main():
     ap.add_argument("--init", help="start from this ProsodyNet checkpoint (fine-tuning to another voice)")
     a = ap.parse_args()
     dev = "cuda"
+    if os.environ.get("HIBARI_GPU_FRAC"):  # share of GPU memory this process may use (user limit)
+        torch.cuda.set_per_process_memory_fraction(float(os.environ["HIBARI_GPU_FRAC"]))
     torch.manual_seed(0)
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
 

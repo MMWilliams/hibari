@@ -12,6 +12,8 @@ import numpy as np, soundfile as sf, torch
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "training"))
 from tiny_model import TinyKokoro, ProsodyNet, to_wav, SR  # noqa: E402
+if os.environ.get("HIBARI_GPU_FRAC"):  # share of GPU memory this process may use (user limit)
+    torch.cuda.set_per_process_memory_fraction(float(os.environ["HIBARI_GPU_FRAC"]))
 
 ap = argparse.ArgumentParser()
 ap.add_argument("snaps", nargs="+")

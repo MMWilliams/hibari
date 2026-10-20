@@ -25,12 +25,13 @@ Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.
 - fable v2 full run (lin-w 20): 50 unseen int8 4.143 / 2.5 % / MCD 13.00 vs shipped 4.167 / 2.6 % / 13.04: NOT better, shipped stays.
 - fenrir per-channel-only candidate staged: hf_stage/voices_v2/am_fenrir_v2.int8.onnx (registry fenrir -> that file,
   run am_fenrir_pc), A/B + demos in runs/voices/am_fenrir_pc. 50 unseen: 4.385 / 2.4 % / MCD 10.94 / 171x / 8.03 MB.
-- [ ] fenrir v2 lever-1 run (10:24-11:40, runs/voices/am_fenrir_v2): if its per-channel export beats 4.385 stage it instead;
-      else rename am_fenrir_v2 -> am_fenrir_v2_lin and am_fenrir_pc -> am_fenrir_v2 so the A/B wavs sit in runs/voices/am_fenrir_v2.
-- [ ] Then: voice_table.py --write, METRICS/MODEL_CARD notes (MCD, per-channel), version 0.2.1 in pyproject + __init__ (no release), TODO, commit, report.
-- [ ] Full runs script: logs/voices/full.sh "--lin-w 20 --hi-w 0.25"
-      bf_emma bm_fable am_fenrir (30k steps each, post_voice --no-stage, MCD) -> runs/voices/<v>_v2, export/<v>_v2.
-- [ ] Then: capacity probe, 12 decoder blocks (dec.8-11 start near identity from heart's init), 10k steps, report only.
+- 2026-10-20 10:53: fenrir v2 run killed at 13.5k for a reboot; 12:05 resumed under the new limits (GPU 0 at half memory,
+  HIBARI_GPU_FRAC=0.5 env switch in train_tiny/train_prosody/eval_voice/diagnose_gap/voice_common; < 20 GB RAM).
+  Chain: logs/voices/wrap.sh (emma + fable v2 per-channel export/eval, fenrir resume -> post -> MCD -> per-channel).
+- [ ] fenrir v2: if its per-channel export beats 4.385 (am_fenrir_pc) stage it instead, else keep am_fenrir_pc staged.
+- [ ] emma / fable v2 per-channel vs shipped per-channel (4.173 / 4.160): stage only if clearly better; else three-way A/B
+      wavs only (scripts/ab_v2.py --no-demos) for the user's ear.
+- [ ] Then: voice_table.py --write, VOICE_GAP/METRICS/MODEL_CARD rows, TODO, commit (0.2.1 stays unreleased).
 - Second metric for the report: scripts/mcd_eval.py (DTW MCD on the 50 unseen sentences): heart 12.44, kore 10.54,
   fenrir 10.97, fable 13.04, emma 11.01 (v1 11.39, v3s 10.72): MCD does not track UTMOS. logs/voices/cand.sh resumes a
   candidate to 30k and runs post_voice.py --no-stage.

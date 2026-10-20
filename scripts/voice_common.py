@@ -17,6 +17,8 @@ VOICES = {
 DUMP_START = {"data/dist_bf_emma2": 40000}        # sentence offset of each dump (0 unless listed)
 SIL_DB, QUIET_DB = -55.0, -50.0
 dev = "cuda"
+if os.environ.get("HIBARI_GPU_FRAC"):  # share of GPU memory this process may use (user limit)
+    torch.cuda.set_per_process_memory_fraction(float(os.environ["HIBARI_GPU_FRAC"]))
 
 
 def add_spec(spec):

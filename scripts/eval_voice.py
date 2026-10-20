@@ -28,6 +28,8 @@ lines = [l for l in lines if 4 <= len(l.split()) <= 35]
 random.Random(0).shuffle(lines)
 
 from kokoro import KModel, KPipeline  # noqa: E402
+if os.environ.get("HIBARI_GPU_FRAC"):  # share of GPU memory this process may use (user limit)
+    torch.cuda.set_per_process_memory_fraction(float(os.environ["HIBARI_GPU_FRAC"]))
 teacher = KModel(repo_id="hexgrad/Kokoro-82M").eval().cuda()
 pipe = KPipeline(lang_code=a.voice[0], repo_id="hexgrad/Kokoro-82M", model=teacher)
 vocab = teacher.vocab

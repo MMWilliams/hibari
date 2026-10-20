@@ -16,6 +16,7 @@ ap.add_argument("--run", required=True, help="runs/voices/<run>: the improved vo
 ap.add_argument("--shipped", help="runs/voices/<dir> of the shipped voice (default <kokoro>)")
 ap.add_argument("--stage", default=os.path.join(ROOT, "hf_stage", "voices_v2"))
 ap.add_argument("--n", type=int, default=3)
+ap.add_argument("--no-demos", action="store_true", help="A/B wavs only (candidate not staged)")
 a = ap.parse_args()
 new, old = os.path.join(ROOT, "runs", "voices", a.run), os.path.join(ROOT, "runs", "voices", a.shipped or a.kokoro)
 gap = np.zeros(SR // 2, np.float32)
@@ -27,6 +28,8 @@ for i in range(a.n):
     assert len(t) == len(t_old), "the two eval runs used different sentences"
     sf.write(os.path.join(new, f"ab{i}_teacher_shipped_improved.wav"), np.concatenate([t, gap, s, gap, n]), SR)
     print(os.path.join(new, f"ab{i}_teacher_shipped_improved.wav"))
+if a.no_demos:
+    sys.exit()
 
 sys.path.insert(0, os.path.join(ROOT, "src"))
 os.environ["HIBARI_HOME"] = a.stage

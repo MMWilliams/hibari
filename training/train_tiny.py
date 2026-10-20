@@ -135,6 +135,8 @@ def main():
     a = ap.parse_args()
 
     dev = "cuda"
+    if os.environ.get("HIBARI_GPU_FRAC"):  # share of GPU memory this process may use (user limit)
+        torch.cuda.set_per_process_memory_fraction(float(os.environ["HIBARI_GPU_FRAC"]))
     torch.manual_seed(0); random.seed(0)
     torch.backends.cuda.matmul.allow_tf32 = torch.backends.cudnn.allow_tf32 = True
     out = Path(a.out); (out / "snap").mkdir(parents=True, exist_ok=True)

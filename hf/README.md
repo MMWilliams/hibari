@@ -37,7 +37,7 @@ story: <audio controls src="https://huggingface.co/maureesewilliams/hibari/resol
 ## Use
 
 ```
-pip install https://github.com/MMWilliams/hibari/releases/download/v0.1.0/hibari-0.1.0-py3-none-any.whl
+pip install hibari-tts
 hibari "Hello there, this is hibari." -o hello.wav
 ```
 
@@ -50,7 +50,7 @@ for chunk in tts.stream(long_text):    # one array per sentence, for low latency
     ...
 ```
 
-The package depends only on numpy and onnxruntime and runs on Windows, macOS and Linux (x64 and arm64).
+The PyPI name is hibari-tts; the import and the command are `hibari`. The package depends only on numpy and onnxruntime and runs on Windows, macOS and Linux (x64 and arm64).
 Everything it needs is inside the wheel; this repository holds the same files for people who want to port
 or study the model.
 

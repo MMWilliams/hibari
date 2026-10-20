@@ -38,8 +38,9 @@ src/hibari/assets/hibari.onnx (int8, 7.94 MB).
 - [ ] Phase 2: native no-Python CLI/library (C/Rust) for Mac/Windows/Linux: ONNX Runtime static or own int8 kernels, real FFT;
       port tokenizer regexes, perceptron, lexicon lookup, number words, OOV net (plain transformer encoder + CTC collapse).
       CI (.github/workflows/publish.yml) tests the wheel on Ubuntu/Windows/macOS arm64, py 3.10 + 3.13: all green 2026-10-20
-      (macOS M-series runner 65-87x, Ubuntu 90x, Windows 159x realtime 1 thread). PyPI: waiting on reese to add the pending
-      trusted publisher (hibari / MMWilliams / hibari / publish.yml / env pypi), then run the workflow with publish=true.
+      (macOS M-series runner 65-87x, Ubuntu 90x, Windows 159x realtime 1 thread). PyPI: PUBLISHED 2026-10-20 as hibari-tts 0.1.0 ("hibari" is owned by
+      another account, iearch); import/command stay hibari. Release: bump version in pyproject + __init__, push, then
+      `gh workflow run publish.yml -f publish=true`; attach the PyPI wheel to a GitHub release; re-upload hf/README.md to HF.
 - [ ] OOV net doubles letters sometimes ("hibari" -> hɪbˈɑɹɹi); samples use inline [hibari](/hibˈɑɹi/).
 
 ## Open (model)

@@ -73,6 +73,30 @@ def silence_loss(y, y_hat, thresh=1e-3):
     return (F.relu(hr - yr) * sil).sum() / sil.sum().clamp(min=1)
 
 
+class LinSTFTLoss(torch.nn.Module):
+    """L1 on log magnitude of linear-frequency STFTs (fft 512/1024/2048, hop fft/4). The mel losses merge a
+    low voice's harmonics and the valleys between them above ~2 kHz, leaving the harmonic/noise balance there
+    to the discriminators; this sees every bin. hi_w scales the bins above 4 kHz."""
+
+    def __init__(self, hi_w=1.0, ffts=(512, 1024, 2048)):
+        super().__init__()
+        self.ffts = ffts
+        for n in ffts:
+            self.register_buffer(f"win{n}", torch.hann_window(n))
+            w = torch.ones(n // 2 + 1)
+            w[int(4000 / SR * n):] = hi_w
+            self.register_buffer(f"w{n}", w[:, None])
+
+    def forward(self, x, y):
+        loss = 0.0
+        for n in self.ffts:
+            win, w = getattr(self, f"win{n}"), getattr(self, f"w{n}")
+            lx = torch.stft(x, n, n // 4, n, win, return_complex=True).abs().clamp(min=1e-5).log()
+            ly = torch.stft(y, n, n // 4, n, win, return_complex=True).abs().clamp(min=1e-5).log()
+            loss = loss + ((lx - ly).abs() * w).sum() / (w.sum() * lx.shape[0] * lx.shape[-1])
+        return loss / len(self.ffts)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--index", default="data/dist/shard*.jsonl")
@@ -97,6 +121,12 @@ def main():
     ap.add_argument("--init", help="copy same-shape weights from this checkpoint (e.g. a narrower run's text side)")
     ap.add_argument("--init-disc", help="load the discriminators from this last.pt too and skip --disc-warmup "
                     "(fine-tuning a trained decoder to another voice)")
+    ap.add_argument("--workers", type=int, default=2, help="DataLoader workers")
+    ap.add_argument("--stop-at", type=int, default=0, help="exit cleanly after this step, keeping the --steps schedule "
+                    "(short comparison run; --resume continues it)")
+    ap.add_argument("--lin-w", type=float, default=0.0, help="weight of a linear-frequency multi-resolution log-STFT L1 "
+                    "(fft 512/1024/2048): resolves individual harmonics where the mel losses average peaks and valleys")
+    ap.add_argument("--hi-w", type=float, default=1.0, help="extra weight on bins above 4 kHz inside --lin-w")
     a = ap.parse_args()
 
     dev = "cuda"
@@ -151,7 +181,8 @@ def main():
         print(f"[*] discriminators from {a.init_disc} (step {c['step']}), no warmup", flush=True)
 
     dl = DataLoader(Dist(train_rows), batch_size=a.batch, shuffle=True, collate_fn=collate,
-                    num_workers=4, drop_last=True, pin_memory=True, persistent_workers=True)
+                    num_workers=a.workers, drop_last=True, pin_memory=True, persistent_workers=True)
+    lin_loss = LinSTFTLoss(a.hi_w).to(dev) if a.lin_w > 0 else None
     C = a.crop
 
     def run(batch):
@@ -225,14 +256,15 @@ def main():
                     l_g = gen_loss(y1, yh1)
             else:
                 l_g = torch.zeros((), device=dev)
+            l_lin = lin_loss(y_hat, y) if lin_loss is not None else torch.zeros((), device=dev)
             loss = (a.mel_w * l_mel + a.stft_w * l_stft + a.sil_w * l_sil + a.dur_w * l_dur
-                    + a.pro_w * l_pro + l_g)
+                    + a.pro_w * l_pro + l_g + a.lin_w * l_lin)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             opt_g.step(); sch_g.step(); sch_d.step()
             step += 1
 
-            for k, v in (("mel", l_mel), ("stft", l_stft), ("sil", l_sil), ("dur", l_dur),
+            for k, v in (("mel", l_mel), ("stft", l_stft), ("lin", l_lin), ("sil", l_sil), ("dur", l_dur),
                          ("pro", l_pro), ("gen", l_g), ("disc", d_l)):
                 acc[k] = acc.get(k, 0.0) + v.detach()                   # no per-step GPU sync
             if step % 100 == 0:
@@ -240,14 +272,14 @@ def main():
                 print(f"  step {step}/{a.steps}  " + "  ".join(f"{k} {float(v)/100:.4f}" for k, v in acc.items())
                       + f"  {(step-s_log)/(now-t_log):.1f} it/s", flush=True)
                 acc = {}; t_log, s_log = now, step
-            if step % 2000 == 0:
+            if step % 2000 == 0 or step == a.stop_at:
                 tmp = out / "last.pt.tmp"
                 torch.save({"model": model.state_dict(), "mpd": mpd.state_dict(), "msd": msd.state_dict(),
                             "opt_g": opt_g.state_dict(), "opt_d": opt_d.state_dict(),
                             "sch_g": sch_g.state_dict(), "sch_d": sch_d.state_dict(),
                             "step": step, "kw": kw}, tmp)
                 os.replace(tmp, ck)
-            if step % a.snap_every == 0:
+            if step % a.snap_every == 0 or step == a.stop_at:
                 # the best checkpoint is usually mid-run while loss keeps falling: keep them all
                 torch.save({"model": model.state_dict(), "kw": kw, "step": step},
                            out / "snap" / f"{step//1000}k.pt")
@@ -258,6 +290,9 @@ def main():
                         sf.write(out / "snap" / f"{step//1000}k_eval{j}.wav",
                                  to_wav(parts, f0)[0].cpu().numpy(), SR)
                 model.train()
+            if step == a.stop_at:
+                print(f"[+] stopped at {step} of {a.steps} (--stop-at)", flush=True)
+                return
     print(f"[+] done at {step}", flush=True)
 
 

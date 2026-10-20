@@ -5,6 +5,17 @@ the teacher as possible, for weak Mac/Windows CPUs. Product name: **hibari** (sk
 MMWilliams/hibari, PyPI hibari-tts, HF maureesewilliams/hibari). 0.2.0 (five voices) published 2026-10-20 05:45.
 Student = training/tiny_model.py: TinyKokoro v3 decoder (4.19M) + ProsodyNet (1.68M); 7.94 MB int8 ONNX per voice.
 
+## In progress 2026-10-20: close the gap on fenrir / fable / emma (session 01GnXdCxRp9e3p4vPLT7uCVX)
+- Diagnosis done (scripts/voice_gap.py, voice_swap.py; runs/voice_gap/; write-up docs/VOICE_GAP.md): the whole gap is in
+  voiced frames below 4 kHz for every voice; fricatives, silence, transitions, high band are fine. Mel LSD / MCD / harmonic
+  amplitude / periodicity / HNR do not separate the weak voices from heart. The noise branch is dead (0 %); the free branch
+  carries unvoiced sounds and 23-38 % of voiced 1-4 kHz energy with structured phases (random phases cost 0.1-0.6 UTMOS).
+- [ ] Lever 1 (running): linear-frequency log-STFT L1 (train_tiny.py --lin-w 20 --hi-w 0.25), emma 10k of 30k steps,
+      runs/exp/emma_lin20; compare with runs/voices/bf_emma_v1 10k on the same held-out rows (runs/exp/gap).
+- [ ] If it helps: finish 30k (--resume), post_voice.py --run ... --no-stage, A/B wavs to runs/voices/<voice>_v2/, then
+      fenrir and fable; stage in hf_stage/voices_v2 with new file names, registry entries, 0.2.1 prepared, not released.
+- [ ] If not: lever 2 = fresh discriminators (no --init-disc), then re-diagnose.
+
 ## 0.2.0 published 2026-10-20 (PyPI hibari-tts 0.2.0, GitHub release v0.2.0, HF voices/ + samples/): voices + British G2P + language study
 - Voices: heart (af_heart, in the wheel), fenrir (am_fenrir, best US male by teacher UTMOS/WER), emma (bf_emma).
   Each voice = own decoder + ProsodyNet fine-tuned from heart's weights on a 15k-sentence teacher dump
